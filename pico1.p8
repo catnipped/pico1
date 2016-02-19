@@ -74,6 +74,8 @@ function carspawn (nr,plr)
   car[nr].clr = plr.clr
   car[nr].active = false
   car[nr].nr = nr
+  car[nr].hitbox = 5
+  car[nr].timer = 0
 end
 
 function cardraw(p)
@@ -117,27 +119,43 @@ end
 
 function collision(c)
   local collide = false
+
   for a = 1,6 do
+
     if c.nr != car[a].nr then
-      if c.y < car[a].y + 1 and c.y > car[a].y - 1 then
-        if c.x < car[a].x + 1 and c.x > car[a].x - 1 then
-          collide = true
-        end
+      if pythagoras(c,car[a]) < c.hitbox + car[a].hitbox then
+        collide = true
       end
     end
-
 
     if collide == true then
-      if max(c.vel,car[a].vel) != c.vel then
-        c.hp += -2
-      else
-        c.hp += -1
+      if c.timer == 0 then
+        if max(c.vel,car[a].vel) != c.vel then
+          c.hp += -2
+        else
+          c.hp += -1
+        end
+        if atan2(c.x,c.y,car[a].x,car[a].y) < 3.14 then
+          c.rot -= 1.6
+        end
+        if atan2(c.x,c.y,car[a].x,car[a].y) > 3.14 then
+          c.rot += 1.6
+        end
+        c.vel += -1
       end
-      c.rot += 0.5
-      c.vel += -1
     end
   end
+
+  if collide == true then
+    c.timer += 1
+    if c.timer > 30 then
+      c.timer = 0
+    end
+  end
+
 end
+
+
 
 
 
@@ -327,6 +345,12 @@ function _update()
 
   for x = 1,6 do
     collision(car[x])
+  end
+
+  for x = 1,6 do
+    if car[x].x < 0 or car[x].x > 128 or car[x].y < 0 or car[x].y > 128 then
+      car[x].dir = lerp(car[x].dir,atan2(car[x].y,car[x].x,64,64),0.3)
+    end
   end
 end
 
