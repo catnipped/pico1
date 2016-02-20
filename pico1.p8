@@ -6,6 +6,7 @@ cam = {}
 cam.x = 0
 cam.y = 0
 car = {}
+pi = 3.14159265359
 
 p1 = {}
 p1.nr = 1
@@ -65,10 +66,10 @@ function carspawn (nr,plr)
   car[nr].y = 0
   car[nr].hp = 10
   car[nr].status = "happy"
-  car[nr].turret = 50
+  car[nr].turret = 0
   car[nr].target = 1
-  car[nr].rot = 1
-  car[nr].dir = 1
+  car[nr].rot = 0
+  car[nr].dir = 0
   car[nr].throt = 0
   car[nr].vel = 0
   car[nr].clr = plr.clr
@@ -79,7 +80,12 @@ function carspawn (nr,plr)
 end
 
 function cardraw(p)
-  spr(0,p.x-4,p.y-4)
+  -- if p.rot < 180  then
+  --   spr(48+flr(p.rot/20),p.x-4,p.y-4)
+  -- else
+  --   spr(48+flr(p.rot-180/20),p.x-4,p.y-4)
+  -- end
+
   circfill(p.x-0.5,p.y-0.5,2,p.clr)
   circfill(p.x+1*sin(p.turret+0.15),p.y+1*cos(p.turret+0.15),0,11)
   line(p.x+2*sin(p.turret),p.y+2*cos(p.turret),p.x+4*sin(p.turret),p.y+4*cos(p.turret),6)
@@ -88,16 +94,21 @@ function cardraw(p)
   end
   if p.active == true then
     circ(p.x,p.y,10,p.clr)
-    circfill(p.x+10*sin(p.dir/360),p.y+10*cos(p.dir/360),1,6)
-    circfill(p.x+10*sin(p.rot/360),p.y+10*cos(p.rot/360),1,p.clr+1)
+    circfill(p.x+10*sin(p.dir),p.y+10*cos(p.dir),1,6)
+    circfill(p.x+10*sin(p.rot),p.y+10*cos(p.rot),1,p.clr+1)
   end
 end
 
 function caranim(p)
-  p.x = p.x+(p.vel*0.1)*sin(p.rot/360)
-  p.y = p.y+(p.vel*0.1)*cos(p.rot/360)
-  p.vel = lerp(p.vel,p.throt,0.1)
-  p.rot = lerp(p.rot,p.dir,1/p.vel)
+  p.x = p.x+(p.vel*0.1)*sin(p.rot)
+  p.y = p.y+(p.vel*0.1)*cos(p.rot)
+  p.vel = lerp(p.vel,p.throt,0.05)
+  p.rot = lerp(p.rot,p.dir,0.1/p.vel)
+end
+
+function angleoffset(i)
+  local i2 = flr(i)
+  i =  i - i2
 end
 
 function attack_roll(c)
@@ -117,46 +128,42 @@ function attack_roll(c)
   end
 end
 
-function collision(c)
-  local collide = false
-
-  for a = 1,6 do
-
-    if c.nr != car[a].nr then
-      if pythagoras(c,car[a]) < c.hitbox + car[a].hitbox then
-        collide = true
-      end
-    end
-
-    if collide == true then
-      if c.timer == 0 then
-        if max(c.vel,car[a].vel) != c.vel then
-          c.hp += -2
-        else
-          c.hp += -1
-        end
-        if atan2(c.x,c.y,car[a].x,car[a].y) < 3.14 then
-          c.rot -= 1.6
-        end
-        if atan2(c.x,c.y,car[a].x,car[a].y) > 3.14 then
-          c.rot += 1.6
-        end
-        c.vel += -1
-      end
-    end
-  end
-
-  if collide == true then
-    c.timer += 1
-    if c.timer > 30 then
-      c.timer = 0
-    end
-  end
-
-end
-
-
-
+-- function collision(c)
+--   local collide = false
+--
+--   for a = 1,6 do
+--
+--     if c.nr != car[a].nr then
+--       if pythagoras(c,car[a]) < c.hitbox + car[a].hitbox then
+--         collide = true
+--       end
+--     end
+--
+--     if collide == true then
+--       if c.timer == 0 then
+--         if max(c.vel,car[a].vel) != c.vel then
+--           c.hp += -2
+--         else
+--           c.hp += -1
+--         end
+--         if atan2(car[a].x-c.x,car[a].y-c.y) < pi then
+--           c.rot -= 30
+--         else
+--           c.rot += 30
+--         end
+--         c.vel += -1
+--       end
+--     end
+--   end
+--
+--   if collide == true then
+--     c.timer += 1
+--     if c.timer > 30 then
+--       c.timer = 0
+--     end
+--   end
+--
+-- end
 
 
 function turret(c,a,b)
@@ -168,7 +175,7 @@ function turret(c,a,b)
 
   c.target = smallest(length)
 
-  c.turret = lerp(c.turret,atan2(car[c.target].y-c.y,car[c.target].x-c.x),0.2)
+  c.turret = rotlerp(c.turret,atan2(car[c.target].y-c.y,car[c.target].x-c.x),0.2)
 end
 
 function smallest(t)
@@ -196,12 +203,13 @@ function control_active(x,plr)
       end
     end
     if btn(1,p) then
-      x.dir += 10
+      x.dir += 0.04
     end
     if btn(0,p) then
-      x.dir += -10
+      x.dir += -0.04
     end
   end
+
 end
 
 function switch(c,p)
@@ -241,6 +249,11 @@ end
 
 function lerp(a,b,t)
   return a + t*(b-a)
+end
+
+function rotlerp(a,b,t)
+  c = (sin(b))/4
+  return a + t*(c-a)
 end
 
 function pythagoras(a,b)
@@ -343,13 +356,13 @@ function _update()
     caranim(car[x])
   end
 
-  for x = 1,6 do
-    collision(car[x])
-  end
+  -- for x = 1,6 do
+  --   collision(car[x])
+  -- end
 
   for x = 1,6 do
     if car[x].x < 0 or car[x].x > 128 or car[x].y < 0 or car[x].y > 128 then
-      car[x].dir = lerp(car[x].dir,atan2(car[x].y,car[x].x,64,64),0.3)
+      car[x].dir = rotlerp(car[x].dir,atan2(64-car[x].y,64-car[x].x),0.3)
     end
   end
 end
@@ -363,23 +376,25 @@ function _draw()
   end
 
   camera(cam.x,cam.y)
-  -- ui(cam.x+1,cam.y+1,p1)
-  -- ui(cam.x+1,cam.y+100,p2)
-  rect(0,0,128,128,7)
+  --  ui(cam.x+1,cam.y+1,p1)
+  --  ui(cam.x+1,cam.y+100,p2)
+  rect(lerp(0,cam.x,0.3),lerp(0,cam.y,0.3),lerp(128,cam.x+128,0.3),lerp(128,cam.y+128,0.3),7)
   for x = 1,6 do
-    print(car[x].hp,car[x].x+5,car[x].y+5)
+    print(car[x].dir,car[x].x+5,car[x].y+5)
+    print(car[x].rot,car[x].x+5,car[x].y+11)
+    print(car[x].turret,car[x].x+5,car[x].y+17)
   end
 end
 
 __gfx__
-666006665ddddd55ddddddd555555555555555555555555550555555555555550000000000000000000000000000000000000000000000000000000000000000
-07000070d5555555d6ddddd555555555555555555555555555555555555555050000000000000000000000000000000000000000000000000000000000000000
-00700700d5555555ddddddd555555555555555555005555555555555555555550000000000000000000000000000000000000000000000000000000000000000
-00077000d5555555ddddddd555555555555555555555555555555555500555550000000000000000000000000000000000000000000000000000000000000000
-00077000d5555555ddddddd555555555555555555555555555500555555505550000000000000000000000000000000000000000000000000000000000000000
-00700700d5555555ddddddd555555555555555555550055555555555555555550000000000000000000000000000000000000000000000000000000000000000
-0700007055555555ddddddd555555555555500555555555555555550555555550000000000000000000000000000000000000000000000000000000000000000
-66600666555555555555555d55555555055555555555555555555555555555550000000000000000000000000000000000000000000000000000000000000000
+000000005ddddd55ddddddd555555555555555555555555550555555555555550000000000000000060000000000600000000600060000600000000000000000
+00000000d5555555d6ddddd555555555555555555555555555555555555555056600006606600000006000006000060006000600060000600000000000000000
+00000000d5555555ddddddd555555555555555555005555555555555555555550070070000070066000700600600700006007000007007000000000000000000
+00000000d5555555ddddddd555555555555555555555555555555555500555550007700000077700000777060077700000777000000770000000000000000000
+00000000d5555555ddddddd555555555555555555555555555500555555505550007700000777000607770000007770000077700000770000000000000000000
+00000000d5555555ddddddd555555555555555555550055555555555555555550070070066007000060070000007006000070060007007000000000000000000
+0000000055555555ddddddd555555555555500555555555555555550555555556600006600000660000006000060000600600060060000600000000000000000
+00000000555555555555555d55555555055555555555555555555555555555550000000000000000000000600006000000600000060000600000000000000000
 00000000000000000000000007077077777077777777070777700770770077777777777777777707777770770770770770777000000000000000000000000000
 00000000000000000000000077777770070777077070777707070777070077770770777777770007007070770777707077707000000000000000000000000000
 00000000000000000000000070777777777077770077770777777770777770770777770000770077007077707077770707007700000000000000000000000000
