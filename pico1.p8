@@ -251,9 +251,20 @@ function lerp(a,b,t)
   return a + t*(b-a)
 end
 
-function rotlerp(a,b,t)
-  c = (sin(b))/4
-  return a + t*(c-a)
+function rotlerp(a, b, t)
+   while a < 0 do
+      a = a + 1
+   end
+   while b < 0 do
+      b = b + 1
+   end
+   diff = b - a
+   if diff > 0.5 then
+      b -= 1
+   elseif diff < -0.5 then
+      b += 1
+   end
+   return a + t * (b - a)
 end
 
 function pythagoras(a,b)
