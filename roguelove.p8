@@ -5,45 +5,73 @@ __lua__
 plr = {}
 plr.x = 10
 plr.y = 10
+plr.screenx = 10
+plr.screeny = 10
 plr.sprite = "@"
 plr.color = 7
 plr.mapx = 0
 plr.mapy = 0
 
+cam = {}
+cam.posx = 0
+cam.posy = 0
+
 function _init()
-  camera(-1,-1)
---generate background
+  --generate background
   for x=0,24 do
     for y=0,24 do
-      mset(x,y,rnd(5)+1)
+       mset(x,y,rnd(5)+1)
     end
   end
   print("generate map ok")
   drawmap()
   print("draw map ok")
   cls()
-
 end
 
 function controls(a)
   if btnp(2) then
     a.y -= 1
+    a.screeny -= 1
   end
   if btnp(3) then
     a.y += 1
+    a.screeny += 1
   end
   if btnp(0) then
     a.x -= 1
+    a.screenx -= 1
   end
   if btnp(1) then
     a.x += 1
+    a.screenx += 1
+  end
+
+  if btnp(2) and a.screeny < 5 then
+    a.screeny = 5
+    cam.posy -= 1
+  end
+  if btnp(3) and a.screeny > 16 then
+    a.screeny = 16
+    cam.posy += 1
+  end
+  if btnp(0) and a.screenx < 5 then
+    a.screenx = 5
+    cam.posx -= 1
+  end
+  if btnp(1) and a.screenx > 24 then
+    a.screenx = 24
+    cam.posx += 1
   end
 end
 
-
-
 function _update()
   controls(plr)
+  camera(col(cam.posx)-1,row(cam.posy)-1)
+
+  if plr.x-plr.mapx > 8 then
+    plr.mapx += 8
+  end
 end
 
 function drawmap()
@@ -67,13 +95,13 @@ function drawcurrentmap(x,y)
   local mapx = 8 * x
   local mapy = 8 * y
   for i = 0,7 do
-        for n = 0,7 do
-          -- generate wall
-          if sget(z*8+i,n) == 7 then
-            print("#",col(i+mapx),row(n+mapy),5)
-          end
-        end
+    for n = 0,7 do
+      -- generate wall
+      if sget(z*8+i,n) == 7 then
+        print("0",col(i+mapx),row(n+mapy),6)
       end
+    end
+  end
 end
 
 function col(a)
@@ -93,21 +121,28 @@ function drawsprite(i,n) --entity, shadow true/false
   print(i.sprite, col(i.x), row(i.y),i.color)
 end
 
+function lerp(a,b,t)
+  return a + t*(b-a)
+end
+
 function _draw()
   cls()
   --grid
-  for x = 1,24 do
-    for y = 1,16 do
+  for x = 1,33 do
+    for y = 1,24 do
     pset(col(x)-3,row(y)-4,1)
     end
   end
-  rect(-1,-1,col(24)-1,row(16)-1,2)
-  for x = 0,2 do
-    for y = 0,1 do
+
+
+  for x = 0,4 do
+    for y = 0,3 do
       drawcurrentmap(plr.mapx+x,plr.mapy+y)
     end
   end
-
+  print(plr.x,col(cam.posx),row(cam.posy+1),9)
+  print(plr.mapx,col(cam.posx),row(cam.posy+2),10)
+  print(plr.x-plr.mapx,col(cam.posx),row(cam.posy+3),8)
   drawsprite(plr,true)
 
 end
