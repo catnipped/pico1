@@ -267,6 +267,35 @@ function rotlerp(a, b, t)
    return a + t * (b - a)
 end
 
+function home(current, goal)
+   while current < 0 do
+      current = current + 1
+   end
+   while goal < 0 do
+      goal = goal + 1
+   end
+   while current > 1 do
+      current = current - 1
+   end
+   while goal > 1 do
+      goal = goal - 1
+   end
+   diff = goal - current
+   dir = 1
+   if diff > 0.5 then
+      dir = -1
+   elseif diff < -0.5 then
+      dir = -1
+   end
+   sign = 0
+   if diff < -deadzone then
+      sign = -1
+   elseif diff > deadzone then
+      sign = 1
+   end
+   return current + sign * speed * dir
+end
+
 function pythagoras(a,b)
   local p = {}
   p.x = b.x-a.x
