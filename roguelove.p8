@@ -140,9 +140,6 @@ function _draw()
       drawcurrentmap(plr.mapx+x,plr.mapy+y)
     end
   end
-  print(plr.x,col(cam.posx),row(cam.posy+1),9)
-  print(plr.mapx,col(cam.posx),row(cam.posy+2),10)
-  print(plr.x-plr.mapx,col(cam.posx),row(cam.posy+3),8)
   drawsprite(plr,true)
 
 end
