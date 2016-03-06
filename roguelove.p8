@@ -121,9 +121,6 @@ function drawsprite(i,n) --entity, shadow true/false
   print(i.sprite, col(i.x), row(i.y),i.color)
 end
 
-function lerp(a,b,t)
-  return a + t*(b-a)
-end
 
 function _draw()
   cls()
