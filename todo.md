@@ -1,0 +1,22 @@
+## todo list
+
+- start screen
+  - cool illustration
+  - title???
+  - player ready
+  - help
+- win screen
+- random player color
+- offset attack range
+- throttle/brake
+- global brake
+- attack logic
+- health logic
+- collision logic
+- explosion animation
+- background
+- UI feedback
+  - blinking lights, boxes
+  - blinking alerts
+- sound effects
+- music
