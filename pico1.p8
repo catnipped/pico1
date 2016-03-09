@@ -3,6 +3,7 @@ version 5
 __lua__
 
 deadzone = 0.01
+playercolors = {2,3,4,8,9,12,13,14}
 center = {}
 center.x = 64
 center.y = 64
@@ -28,17 +29,19 @@ p2.x = 0
 p2.y = 0
 p2.car = 1
 
-
---car functions
-function carspawn (nr,plr)
+function carspawn (nr,plr) --car functions
   car[nr] = {}
   car[nr].x = (plr.nr-1)*64+36
   car[nr].y = 0
   car[nr].hp = 5
   car[nr].status = "happy"
   car[nr].dead = false
+  car[nr].death_counter = 0
   car[nr].turret = 0
+  car[nr].attack_offset = 0
+  car[nr].attack_counter = 0
   car[nr].target = 1
+  car[nr].damaged = false
   if plr.nr == 1 then
     car[nr].rot = 0.75
     car[nr].dir = 0.75
@@ -62,9 +65,49 @@ function carspawn (nr,plr)
   car[nr].tracks_counter = 0
 end
 
+function cardraw(p)
+  --wheels
+  if p.dead == false then
+    if p.rot <= 0.25  then
+      spr(13-6*(p.rot*4),p.x-4,p.y-4,1,1,true)
+    elseif p.rot > 0.25 and p.rot <= 0.5 then
+      spr((8+6*(p.rot*4))-6,p.x-4,p.y-4)
+    elseif p.rot > 0.5 and p.rot <= 0.75 then
+      spr(13-6*(p.rot*4)+12,p.x-4,p.y-4,1,1,true)
+    elseif p.rot > 0.75 then
+      spr((8+6*(p.rot*4))-18,p.x-4,p.y-4)
+    end
+  else
+    spr(15,p.x-4,p.y-4)
+  end
+  if p.active == true then
+    line(p.x,p.y,p.x+(12+flr(p.vel))*sin(p.rot-0.25+p.attack_offset),p.y+(12+flr(p.vel))*cos(p.rot-0.25+p.attack_offset),5)
+    line(p.x,p.y,p.x+(12+flr(p.vel))*sin(p.rot+0.25-p.attack_offset),p.y+(12+flr(p.vel))*cos(p.rot+0.25-p.attack_offset),5)
+  end
+  circfill(p.x-0.5,p.y-0.5,2,p.clr)
+  --status light
+  if p.dead == true then
+    circfill(p.x+1*sin(p.turret+0.15),p.y+1*cos(p.turret+0.15),0,0)
+  elseif p.status == "danger" then
+    circfill(p.x+1*sin(p.turret+0.15),p.y+1*cos(p.turret+0.15),0,10)
+  else
+    circfill(p.x+1*sin(p.turret+0.15),p.y+1*cos(p.turret+0.15),0,11)
+  end
+
+  line(p.x+2*sin(p.turret),p.y+2*cos(p.turret),p.x+4*sin(p.turret),p.y+4*cos(p.turret),6)
+  if p.hit == true then
+    circfill(p.x+4*sin(p.turret),p.y+4*cos(p.turret),1,10)
+  end
+  if p.active == true then
+    circ(p.x,p.y,12+flr(p.vel),p.clr)
+    circfill(p.x+(12+flr(p.vel))*sin(p.rot),p.y+(12+flr(p.vel))*cos(p.rot),1,p.clr)
+    circfill(p.x+(12+flr(p.vel))*sin(p.dir),p.y+(12+flr(p.vel))*cos(p.dir),1,7)
+  end
+end
+
 function tracks(c)
   local length = 50
-  if c.tracks_counter > 10 then
+  if c.tracks_counter > 10 and c.dead == false then
     add(c.tracks_left_x,c.x+2.5*sin(c.rot-0.25))
     add(c.tracks_left_y,c.y+2.5*cos(c.rot-0.25))
     add(c.tracks_right_x,c.x+2.5*sin(c.rot+0.25))
@@ -91,30 +134,6 @@ function tracks(c)
   end
 end
 
-function cardraw(p)
-  --wheels
-  if p.rot <= 0.25  then
-    spr(13-6*(p.rot*4),p.x-4,p.y-4,1,1,true)
-  elseif p.rot > 0.25 and p.rot <= 0.5 then
-    spr((8+6*(p.rot*4))-6,p.x-4,p.y-4)
-  elseif p.rot > 0.5 and p.rot <= 0.75 then
-    spr(13-6*(p.rot*4)+12,p.x-4,p.y-4,1,1,true)
-  elseif p.rot > 0.75 then
-    spr((8+6*(p.rot*4))-18,p.x-4,p.y-4)
-  end
-
-  circfill(p.x-0.5,p.y-0.5,2,p.clr)
-  circfill(p.x+1*sin(p.turret+0.15),p.y+1*cos(p.turret+0.15),0,11)
-  line(p.x+2*sin(p.turret),p.y+2*cos(p.turret),p.x+4*sin(p.turret),p.y+4*cos(p.turret),6)
-  if p.hit == true then
-    circfill(p.x+4*sin(p.turret),p.y+4*cos(p.turret),1,10)
-  end
-  if p.active == true then
-    circ(p.x,p.y,10,p.clr)
-    circfill(p.x+10*sin(p.rot),p.y+10*cos(p.rot),1,5)
-    circfill(p.x+10*sin(p.dir),p.y+10*cos(p.dir),1,7)
-  end
-end
 
 function caranim(p)
   p.x = p.x+(p.vel*0.1)*sin(p.rot)
@@ -125,19 +144,25 @@ function caranim(p)
 end
 
 function attack_roll(c)
-  local cnt = 1
   c.hit = false
-  if pythagoras(c,car[c.target]) < 25 then
-    if cnt == 1 then
-      if rnd(10) < 5 then
+  if c.dead == false and pythagoras(c.x,c.y,car[c.target]) < 12+c.vel then
+    if atan2(car[c.target].y-c.y,car[c.target].x-c.x) > c.rot-0.25+c.attack_offset then
+      if c.attack_counter == 0 then
         c.hit = true
-      end
-    else
-      cnt += 1
-      if cnt > 50+rnd(10) then
-        cnt = 1
+        car[c.target].damaged = true
+        c.attack_counter += 1
+      else
+        c.attack_counter += 1
+        if c.attack_counter > 5 then c.attack_counter = 0 end
       end
     end
+  end
+end
+
+function health(c)
+  if c.damaged == true then
+    c.hp -= 0.08
+    c.damaged = false
   end
 end
 
@@ -147,25 +172,20 @@ function collision(c)
   for a = 1,6 do
 
     if c.nr != car[a].nr then
-      if pythagoras(c,car[a]) < c.hitbox + car[a].hitbox then
+      if pythagoras(c.x,c.y,car[a]) < c.hitbox + car[a].hitbox then
         collide = true
       end
     end
 
     if collide == true then
       if c.timer == 0 then
-        if max(c.vel,car[a].vel) != c.vel then
-          c.hp += -2
-        else
-          c.hp += -1
-        end
         -- if atan2(car[a].x-c.x,car[a].y-c.y) < 0.5 then
         --   c.rot += 0.2
         --
         -- else
         --   c.rot -= 0.2
         -- end
-        c.vel = c.vel/2
+        c.vel -= 1
       end
     end
   end
@@ -180,17 +200,19 @@ function collision(c)
 
 end
 
-
 function turret(c,a,b)
   local length = {}
   for x = a,b do
-    i = pythagoras(c,car[x])
-    length[x] = i
+    if car[x].dead == false then
+      i = pythagoras(c.x,c.y,car[x])
+      length[x] = i
+    end
   end
 
   c.target = smallest(length)
-
-  c.turret = rotlerp(c.turret,atan2(car[c.target].y-c.y,car[c.target].x-c.x),0.2)
+  if c.dead == false then
+    c.turret = rotlerp(c.turret,atan2(car[c.target].y-c.y,car[c.target].x-c.x),0.2)
+  end
 end
 
 function smallest(t)
@@ -224,7 +246,6 @@ function control_active(x,plr)
       x.dir += -0.04
     end
   end
-
 end
 
 function switch(p)
@@ -315,10 +336,10 @@ function home(current, goal, speed)
    return current + sign * speed * dir
 end
 
-function pythagoras(a,b)
+function pythagoras(x,y,b)
   local p = {}
-  p.x = b.x-a.x
-  p.y = b.y-a.y
+  p.x = b.x-x
+  p.y = b.y-y
   return sqrt(p.x*p.x + p.y*p.y)
 end
 
@@ -342,13 +363,15 @@ function ui(x,y,c,p)
     rectfill(x,y,x+box.width,y+box.height,5)
   end
 
-  spr(68,x+1,y+1) spr(69+c.hp,x+7,y+1)
+  --speed
   local throttle = x+13+c.throt*2
   local velocity = x+13+flr(c.vel*2)
   rectfill(x+13,y+1,velocity,y+box.height-1,0)
   line(throttle,y+1,throttle,y+box.height-1,7)
   spr(69+c.throt,x+box.width-5,y+1)
-
+  --health
+  spr(68,x+1,y+1) spr(69+c.hp,x+7,y+1)
+  --special status
   if c.status == "danger" and c.dead == false then
     spr(80,x,y+status_position,4,1)
   elseif c.status == "auto" and c.dead == false then
@@ -357,8 +380,33 @@ function ui(x,y,c,p)
 
 end
 
+function attack_offset(c)
+  c.attack_offset = -0.1+0.05*c.vel
+end
+
+function brake(p)
+  if p.nr == 1 then
+    for x = 1,3 do
+      car[x].throt = 0
+    end
+  end
+
+  if p.nr == 2 then
+    for x = 4,6 do
+      car[x].throt = 0
+    end
+  end
+end
+
 function _init()
   cls()
+  function randomizeclr()
+
+    p1.clr = playercolors[flr(rnd(8)+1)]
+    del(playercolors,p1.clr)
+    p2.clr = playercolors[flr(rnd(7)+1)]
+  end
+  randomizeclr()
 
   --generate background
   for x=0,24,1 do
@@ -377,9 +425,6 @@ function _init()
     end
   end
   --
-
-  p1.clr = rnd(15)
-  p2.clr = rnd(15)
 
   --initiate cars
   for x=1,3 do
@@ -421,13 +466,21 @@ function _update()
     switch(p2)
   end
 
+  if btnp(5,0) then
+    brake(p1)
+  end
+
+  if btnp(5,1) then
+    brake(p2)
+  end
+
   current_car(p1)
   current_car(p2)
 
   --camera
   cam.x = lerp(cam.x, lerp(64,lerp(p1.x,p2.x,0.5),0.5)-64, 0.05)
   cam.y = lerp(cam.y, lerp(64,lerp(p1.y,p2.y,0.5),0.5)-64, 0.05)
-  
+
   --turret
   for x = 1,3 do
     turret(car[x],4,6)
@@ -437,11 +490,13 @@ function _update()
   end
 
   for x = 1,6 do
+    attack_offset(car[x])
     attack_roll(car[x])
   end
 
   for x = 1,6 do
     caranim(car[x])
+    health(car[x])
   end
 
   for x = 1,6 do
@@ -454,10 +509,20 @@ function _update()
       car[x].dead = true
       car[x].throt = 0
       car[x].hp = 0
-    elseif pythagoras(center,car[x]) > arena then
+      car[x].active = false
+    elseif pythagoras(center.x,center.y,car[x]) > arena then
       car[x].dir = atan2(64-car[x].y,64-car[x].x)
       car[x].status = "auto"
+      car[x].vel = lerp(car[x].vel,2,0.1)
     elseif car[x].hp < 2 then car[x].status = "danger" end
+  end
+end
+
+function death_anim(c)
+  if c.death_counter <= 15 then
+    circfill(c.x,c.y,c.death_counter,10)
+    circfill(c.x,c.y,15 - c.death_counter*0.7,7)
+    c.death_counter += 1
   end
 end
 
@@ -467,12 +532,15 @@ function _draw()
   map(0,0,-32,-32,24,24)
   circfill(center.x,center.y,arena,0)
 
-  circ(center.x,center.y,arena,6)
+  circ(center.x,center.y,arena,5)
   for x=1,6 do
     tracks(car[x])
   end
   for x=1,6 do
     cardraw(car[x])
+    if car[x].dead == true then
+      death_anim(car[x])
+    end
   end
 
   camera(cam.x,cam.y)
@@ -482,18 +550,20 @@ function _draw()
   for x = 4,6 do
    ui(cam.x,cam.y+120,car[x],p2)
   end
+  print(stat(1),cam.x+10,cam.y+30)
+
 
 end
 
 __gfx__
-00000000500000550000000555555555555555555555555500000000000000000000000000000000060000000000600000000600060000600600006000000000
-00000000055555550500000555555555555555555555555566000066660000666600006606600000006000006000060006000600060000600600006000000000
-00000000055555550000000555555555555555555005555500700700007007000070070000070066000700600600700006007000007007000070070000000000
-00000000055555550000000555555555555555555555555500077000000770000007700000077700000777060077700000777000000770000007700000000000
-00000000055555550000000555555555555555555555555500077000000770000007700000777000607770000007770000077700000770000007700000000000
-00000000055555550000000555555555555555555550055500700700007007000070070066007000060070000007006000070060007007000070070000000000
-00000000555555550000000555555555555500555555555566000066660000666600006600000660000006000060000600600060060000600600006000000000
-00000000555555555555555055555555055555555555555500000000000000000000000000000000000000600006000000600000060000600600006000000000
+00000000500000550000000555555555555555555555555500000000000000000000000000000000060000000000600000000600060000600600006006060000
+00000000055555550500000555555555555555555555555566000066660000666600006606600000006000006000060006000600060000600600006050000050
+00000000055555550000000555555555555555555005555500700700007007000070070000070066000700600600700006007000007007000070070000700700
+00000000055555550000000555555555555555555555555500077000000770000007700000077700000777060077700000777000000770000007700060077056
+00000000055555550000000555555555555555555555555500077000000770000007700000777000607770000007770000077700000770000007700005077000
+00000000055555550000000555555555555555555550055500700700007007000070070066007000060070000007006000070060007007000070070000700706
+00000000555555550000000555555555555500555555555566000066660000666600006600000660000006000060000600600060060000600600006050000000
+00000000555555555555555055555555055555555555555500000000000000000000000000000000000000600006000000600000060000600600006006005060
 50005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 05000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00500050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
