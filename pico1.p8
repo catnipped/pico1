@@ -38,7 +38,7 @@ function carspawn (nr,plr) --car functions
   car[nr].dead = false
   car[nr].death_counter = 0
   car[nr].turret = 0
-  car[nr].attack_offset = 0
+  car[nr].attack_offset = {}
   car[nr].attack_counter = 0
   car[nr].target = 1
   car[nr].damaged = false
@@ -80,10 +80,6 @@ function cardraw(p)
   else
     spr(15,p.x-4,p.y-4)
   end
-  if p.active == true then
-    line(p.x,p.y,p.x+(12+flr(p.vel))*sin(p.rot-0.25+p.attack_offset),p.y+(12+flr(p.vel))*cos(p.rot-0.25+p.attack_offset),5)
-    line(p.x,p.y,p.x+(12+flr(p.vel))*sin(p.rot+0.25-p.attack_offset),p.y+(12+flr(p.vel))*cos(p.rot+0.25-p.attack_offset),5)
-  end
   circfill(p.x-0.5,p.y-0.5,2,p.clr)
   --status light
   if p.dead == true then
@@ -93,15 +89,14 @@ function cardraw(p)
   else
     circfill(p.x+1*sin(p.turret+0.15),p.y+1*cos(p.turret+0.15),0,11)
   end
-
   line(p.x+2*sin(p.turret),p.y+2*cos(p.turret),p.x+4*sin(p.turret),p.y+4*cos(p.turret),6)
   if p.hit == true then
     circfill(p.x+4*sin(p.turret),p.y+4*cos(p.turret),1,10)
   end
   if p.active == true then
-    circ(p.x,p.y,12+flr(p.vel),p.clr)
-    circfill(p.x+(12+flr(p.vel))*sin(p.rot),p.y+(12+flr(p.vel))*cos(p.rot),1,p.clr)
-    circfill(p.x+(12+flr(p.vel))*sin(p.dir),p.y+(12+flr(p.vel))*cos(p.dir),1,7)
+    circ(p.x+p.attack_offset.x,p.y+p.attack_offset.y,10+flr(p.vel),p.clr)
+    circfill(p.x+10*sin(p.rot),p.y+10*cos(p.rot),1,p.clr)
+    circfill(p.x+10*sin(p.dir),p.y+10*cos(p.dir),1,7)
   end
 end
 
@@ -145,16 +140,14 @@ end
 
 function attack_roll(c)
   c.hit = false
-  if c.dead == false and pythagoras(c.x,c.y,car[c.target]) < 12+c.vel then
-    if atan2(car[c.target].y-c.y,car[c.target].x-c.x) > c.rot-0.25+c.attack_offset then
-      if c.attack_counter == 0 then
-        c.hit = true
-        car[c.target].damaged = true
-        c.attack_counter += 1
-      else
-        c.attack_counter += 1
-        if c.attack_counter > 5 then c.attack_counter = 0 end
-      end
+  if c.dead == false and pythagoras(c.x+c.attack_offset.x,c.y+c.attack_offset.y,car[c.target]) < 10+c.vel then
+    if c.attack_counter == 0 then
+      c.hit = true
+      car[c.target].damaged = true
+      c.attack_counter += 1
+    else
+      c.attack_counter += 1
+      if c.attack_counter > 5 then c.attack_counter = 0 end
     end
   end
 end
@@ -240,10 +233,10 @@ function control_active(x,plr)
       end
     end
     if btn(1,p) then
-      x.dir += 0.04
+      x.dir += 0.03
     end
     if btn(0,p) then
-      x.dir += -0.04
+      x.dir += -0.03
     end
   end
 end
@@ -381,7 +374,8 @@ function ui(x,y,c,p)
 end
 
 function attack_offset(c)
-  c.attack_offset = -0.1+0.05*c.vel
+  c.attack_offset.x = 1.5*c.vel*sin(c.rot)
+  c.attack_offset.y = 1.5*c.vel*cos(c.rot)
 end
 
 function brake(p)
