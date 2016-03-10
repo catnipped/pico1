@@ -1,6 +1,6 @@
 ## todo list
 
-
+- plr.car variable
 <!-- - random player color -->
 <!-- - offset attack range -->
 <!-- - global brake -->

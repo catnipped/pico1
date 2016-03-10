@@ -10,6 +10,7 @@ center.y = 64
 arena = 67
 sprite = 8
 maintimer = 60 * 30
+freeze = 0
 
 cam = {}
 cam.x = 0
@@ -100,8 +101,13 @@ function cardraw(p)
   end
   if p.active == true then
     circ(p.x+p.attack_offset.x,p.y+p.attack_offset.y,10+flr(p.vel),p.clr)
+    if p.dead == false then
     circfill(p.x+10*sin(p.rot),p.y+10*cos(p.rot),1,p.clr)
     circfill(p.x+10*sin(p.dir),p.y+10*cos(p.dir),1,7)
+    elseif p.dead == true then
+      line(p.x-(5+flr(p.vel)),p.y-(5+flr(p.vel)),p.x+(5+flr(p.vel)),p.y+(5+flr(p.vel)),7)
+      line(p.x+(5+flr(p.vel)),p.y-(5+flr(p.vel)),p.x-(5+flr(p.vel)),p.y+(5+flr(p.vel)),7)
+    end
   end
 end
 
@@ -246,37 +252,55 @@ function control_active(x,plr)
   end
 end
 
-function switch(p)
-  if p.nr == 1 then
-    for x = 1,3 do
-      car[x].active = false
+function switch(plr)
+  function activecheck(a,b)
+    for x = a,b do
+      if car[x].active == true then
+        car[x].active = false
+        return x
+      end
     end
+    return -1
   end
-  if p.nr == 2 then
-    for x = 4,6 do
-      car[x].active = false
+
+  if plr.nr == 1 then
+    local active = activecheck(1,3)+1
+    if active < 0 then
+      for y = 1,3 do
+        if car[y].dead == false then
+          active=y
+          break
+        end
+      end
     end
-  end
-  p.car += 1
-
-  if p.nr == 1 and p.car > 3 then
-    p.car = 1
-  end
-
-  if p.nr == 2 and p.car > 6 then
-    p.car = 4
+    if active < 0 then return end
+    if active > 3 or active < 1 then
+      active = 1
+    end
+    p1.car = active
+    car[active].active = true
   end
 
-  -- if car[p.car].dead == true and p1.winner == false and p2.winner == false then
-  --   p.car += 1
-  -- end
-
-  car[p.car].active = true
+  if plr.nr == 2 then
+    local active = activecheck(4,6)+1
+    if active < 0 then
+      for y = 4,6 do
+        if car[y].dead == false then
+          active=y
+          break
+        end
+      end
+    end
+    if active < 0 then return end
+    if active > 6 or active < 4 then
+      active = 4
+    end
+    car[active].active = true
+  end
 end
 
 function set_active(a,plr)
   if a.active == true then
-    plr.car = a.nr
     plr.x = a.x
     plr.y = a.y
     plr.throt = a.throt
@@ -404,7 +428,6 @@ end
 function _init()
   cls()
   function randomizeclr()
-
     p1.clr = playercolors[flr(rnd(8)+1)]
     del(playercolors,p1.clr)
     p2.clr = playercolors[flr(rnd(7)+1)]
@@ -442,6 +465,11 @@ function _init()
 end
 
 function _update()
+  if freeze > 0 then
+    freeze -= 1
+    return
+  end
+
   --controls
   for x = 1,3 do
     control_active(car[x],p1)
@@ -499,10 +527,18 @@ function _update()
   for x = 1,6 do
     car[x].status = "happy"
     if car[x].hp < 1 then
+      if car[x].dead == false then
+        freeze = 30
+        if car[x].active and x > 0 and x < 4 then
+          switch(p1)
+        end
+        if car[x].active and x > 3 and x < 7 then
+          switch(p2)
+        end
+      end
       car[x].dead = true
       car[x].throt = 0
       car[x].hp = 0
-      car[x].active = false
     elseif pythagoras(center.x,center.y,car[x]) > arena then
       car[x].dir = atan2(64-car[x].y,64-car[x].x)
       car[x].status = "auto"
@@ -577,6 +613,7 @@ function _draw()
     spr(71,cam.x+44,cam.y+y)
     spr(86,cam.x+52,cam.y+y,5,1)
   end
+
 end
 
 __gfx__
