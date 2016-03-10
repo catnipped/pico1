@@ -5,7 +5,7 @@
 <!-- - offset attack range -->
 <!-- - global brake -->
 <!-- - out of bounds brake -->
-- attack logic
+<!-- - attack logic -->
 <!-- - health logic -->
 <!-- - collision logic -->
 - sudden death?
@@ -22,4 +22,4 @@
   - title
   - player ready
   - help
-- win screen
+<!-- - win screen -->
