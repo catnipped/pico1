@@ -48,6 +48,7 @@ function carspawn (nr,plr) --car array
   car[nr].attack_counter = 0
   car[nr].target = 1
   car[nr].damaged = false
+  car[nr].damagedcounter = 0
   if plr.nr == 1 then
     car[nr].rot = 0.75
     car[nr].dir = 0.75
@@ -60,7 +61,7 @@ function carspawn (nr,plr) --car array
   car[nr].clr = plr.clr
   car[nr].active = false
   car[nr].nr = nr
-  car[nr].hitbox = 3
+  car[nr].hitbox = 4
   car[nr].timer = 0
   car[nr].rotspeed = 0.01
   car[nr].tracks_left_x = {}
@@ -72,6 +73,7 @@ function carspawn (nr,plr) --car array
 end
 
 function cardraw(p)
+
   --wheels
   if p.dead == false then
     if p.rot <= 0.25  then
@@ -86,7 +88,9 @@ function cardraw(p)
   else
     spr(15,p.x-4,p.y-4)
   end
-  circfill(p.x-0.5,p.y-0.5,2,p.clr)
+
+  circfill(p.x-0.5,p.y-0.5,2,p.clr) --body
+
   --status light
   if p.dead == true then
     circfill(p.x+1*sin(p.turret+0.15),p.y+1*cos(p.turret+0.15),0,0)
@@ -95,18 +99,36 @@ function cardraw(p)
   else
     circfill(p.x+1*sin(p.turret+0.15),p.y+1*cos(p.turret+0.15),0,11)
   end
-  line(p.x+2*sin(p.turret),p.y+2*cos(p.turret),p.x+4*sin(p.turret),p.y+4*cos(p.turret),6)
-  if p.hit == true then
-    circfill(p.x+4*sin(p.turret),p.y+4*cos(p.turret),1,10)
+  --damage
+  if p.damaged == true then
+    circfill(p.x-3+rnd(3),p.y-3+rnd(3),2,7)
   end
+
+  --turret
+  if p.hit == false then
+    -- circfill(p.x+4*sin(p.turret),p.y+4*cos(p.turret),1,10)
+    line(p.x+2*sin(p.turret),p.y+2*cos(p.turret),p.x+4*sin(p.turret),p.y+4*cos(p.turret),6)
+  else
+    line(p.x+2*sin(p.turret),p.y+2*cos(p.turret),p.x+6*sin(p.turret),p.y+6*cos(p.turret),7)
+  end
+
+  --gui
   if p.active == true then
-    circ(p.x+p.attack_offset.x,p.y+p.attack_offset.y,10+flr(p.vel),p.clr)
-    if p.dead == false then
+    if p.dead == false then --circle
+      if p.vel > 0 then
+        circ(p.x+p.attack_offset.x,p.y+p.attack_offset.y,10+flr(p.vel),p.clr)
+      else
+        circ(p.x+p.attack_offset.x,p.y+p.attack_offset.y,10,p.clr)
+      end
+    else
+      circ(p.x,p.y,10,7)
+    end
+    if p.dead == false then --reticule
     circfill(p.x+10*sin(p.rot),p.y+10*cos(p.rot),1,p.clr)
     circfill(p.x+10*sin(p.dir),p.y+10*cos(p.dir),1,7)
-    elseif p.dead == true then
-      line(p.x-(5+flr(p.vel)),p.y-(5+flr(p.vel)),p.x+(5+flr(p.vel)),p.y+(5+flr(p.vel)),7)
-      line(p.x+(5+flr(p.vel)),p.y-(5+flr(p.vel)),p.x-(5+flr(p.vel)),p.y+(5+flr(p.vel)),7)
+    elseif p.dead == true then --cross if dead
+      line(p.x-7,p.y-7,p.x+7,p.y+7,7)
+      line(p.x+7,p.y-7,p.x-7,p.y+7,7)
     end
   end
 end
@@ -140,7 +162,6 @@ function tracks(c)
   end
 end
 
-
 function caranim(p)
   p.x = p.x+(p.vel*0.1)*sin(p.rot)
   p.y = p.y+(p.vel*0.1)*cos(p.rot)
@@ -165,8 +186,13 @@ end
 
 function health(c)
   if c.damaged == true then
-    c.hp -= 0.08
-    c.damaged = false
+    if c.damagedcounter == 0 then c.hp -= 0.1 end
+
+    c.damagedcounter += 1
+    if c.damagedcounter > 1 then
+      c.damaged = false
+      c.damagedcounter = 0
+    end
   end
 end
 
@@ -183,12 +209,7 @@ function collision(c)
 
     if collide == true then
       if c.timer == 0 then
-        -- if atan2(car[a].x-c.x,car[a].y-c.y) < 0.5 then
-        --   c.rot += 0.2
-        --
-        -- else
-        --   c.rot -= 0.2
-        -- end
+        c.rot += rnd(1)/2
         c.vel -= 1
       end
     end
@@ -202,6 +223,14 @@ function collision(c)
     end
   end
 
+end
+
+function death_anim(c)
+  if c.death_counter <= 15 then
+    circfill(c.x,c.y,c.death_counter,10)
+    circfill(c.x,c.y,15 - c.death_counter*0.7,7)
+    c.death_counter += 1
+  end
 end
 
 function turret(c,a,b)
@@ -392,14 +421,19 @@ function ui(x,y,c,p)
   --speed
   local throttle = x+13+c.throt*2
   local velocity = x+13+flr(c.vel*2)
+  if velocity < 0 then velocity = 0 end
   rectfill(x+13,y+1,velocity,y+box.height-1,0)
   line(throttle,y+1,throttle,y+box.height-1,7)
   spr(69+c.throt,x+box.width-5,y+1)
   --health
+  if c.damaged == true then pal(7,0) end
   spr(68,x+1,y+1) spr(69+c.hp,x+7,y+1)
+  pal()
   --special status
   if c.status == "danger" and c.dead == false then
+    pal(7,10)
     spr(80,x,y+status_position,4,1)
+    pal()
   elseif c.status == "auto" and c.dead == false then
     spr(64,x,y+status_position,4,1)
   end
@@ -450,15 +484,28 @@ function _init()
     carspawn(x,p2)
   end
 
-  car[1].y = 36
-  car[2].y = 72
-  car[3].y = 104
-  car[4].y = 36
-  car[5].y = 72
-  car[6].y = 104
+  car[1].x = center.x -40
+  car[1].y = center.y -40
+  car[1].dir = -0.125
+  car[2].x = center.x
+  car[2].y = center.y -40
+  car[2].dir = 0
+  car[3].x = center.x -40
+  car[3].y = center.y
+  car[3].dir = -0.25
 
-  car[1].active = true
-  car[6].active = true
+  car[4].x = center.x +40
+  car[4].y = center.y +40
+  car[4].dir = -0.675
+  car[5].x = center.x
+  car[5].y = center.y +40
+  car[5].dir = 0.5
+  car[6].x = center.x +40
+  car[6].y = center.y
+  car[6].dir = 0.25
+
+  car[2].active = true
+  car[4].active = true
 
 
   --
@@ -528,7 +575,7 @@ function _update()
     car[x].status = "happy"
     if car[x].hp < 1 then
       if car[x].dead == false then
-        freeze = 30
+        freeze = 20
         if car[x].active and x > 0 and x < 4 then
           switch(p1)
         end
@@ -563,13 +610,6 @@ function _update()
   p2.deathcount = 0
 end
 
-function death_anim(c)
-  if c.death_counter <= 15 then
-    circfill(c.x,c.y,c.death_counter,10)
-    circfill(c.x,c.y,15 - c.death_counter*0.7,7)
-    c.death_counter += 1
-  end
-end
 
 function _draw()
   cls()
@@ -617,14 +657,14 @@ function _draw()
 end
 
 __gfx__
-00000000111111111111111111111111111111111111111111111001000000000000000000000000060000000000600000000600060000600600006006060000
-00000000111111110011111111111110101111111111111110111111660000666600006606600000006000006000060006000600060000600600006050000050
-00000000111111110111111111111111111111111111111111111111007007000070070000070066000700600600700006007000007007000070070000700700
-00000000111111111111111111111111111110011111111111111111000770000007700000077700000777060077700000777000000770000007700060077056
-00000000111111111111111111101111011111111111111111111100000770000007700000777000607770000007770000077700000770000007700005077000
-00000000111111111111100111111111111111111111111111111111007007000070070066007000060070000007006000070060007007000070070000700706
-00000000111111111111111111111111111111111010011111111111660000666600006600000660000006000060000600600060060000600600006050000000
-00000000111111111111111110000111111111111111111111111111000000000000000000000000000000600006000000600000060000600600006006005060
+00000000111111111111111111111111111111111111111111111001000000000000000000000000050000000000500000000500050000500500005006050000
+00000000111111110011111111111110101111111111111110111111550000555500005505500000005000005000650005006500056006500560065050000050
+00000000111111110111111111111111111111111111111111111111066006600660066000660055006600500560600005606000006006000060060000600600
+00000000111111111111111111111111111110011111111111111111000770000007700000077660000776650067700000677000000770000007700060077056
+00000000111111111111111111101111011111111111111111111100000770000007700006677000566770000007760000077600000770000007700005077000
+00000000111111111111100111111111111111111111111111111111066006600660066055006600050066000006065000060650006006000060060000600605
+00000000111111111111111111111111111111111010011111111111550000555500005500000550000005000056000500560050056006500560065050000000
+00000000111111111111111110000111111111111111111111111111000000000000000000000000000000500005000000500000050000500500005006005060
 50005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 05000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00500050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

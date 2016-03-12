@@ -1,6 +1,6 @@
 ## todo list
 
-- plr.car variable
+<!-- - plr.car variable -->
 <!-- - random player color -->
 <!-- - offset attack range -->
 <!-- - global brake -->
@@ -8,12 +8,13 @@
 <!-- - attack logic -->
 <!-- - health logic -->
 <!-- - collision logic -->
-- sudden death?
+<!-- - sudden death? -->
 <!-- - explosion animation -->
-- background
+<!-- - background -->
 - UI feedback
   <!-- - blinking lights -->
   - blinking alerts
+  - which car i switch
 - sound effects
 - music
 - title?!!!
