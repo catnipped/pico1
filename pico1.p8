@@ -120,29 +120,21 @@ function cardraw(p)
   end
 
   --shield
-  if p.owner == 1 then
-    if p.shield == true and p1.guage < 1 then
+  function shieldcircle(c,p)
+    if p > 3 then local plr = p2 else plr = p1 end
+    if c.shield == true and plr.guage < 1 then
       if every(2,3) == true then
-        circfill(p.x-0.5,p.y-0.5,7,7)
+        circfill(c.x-0.5,c.y-0.5,7,7)
       end
-    elseif p.shield == true then
-      circfill(p.x-0.5,p.y-0.5,7,11)
+    elseif c.shield == true then
+      circfill(c.x-0.5,c.y-0.5,7,7)
       if every(2,4) == true then
-        circfill(p.x-0.5,p.y-0.5,7,10)
-      end
-    end
-  elseif p.owner == 2 then
-    if p.shield == true and p2.guage < 1 then
-      if every(2,3) == true then
-        circfill(p.x-0.5,p.y-0.5,7,7)
-      end
-    elseif p.shield == true then
-      circfill(p.x-0.5,p.y-0.5,7,11)
-      if every(2,4) == true then
-        circfill(p.x-0.5,p.y-0.5,7,10)
+        circfill(c.x-0.5,c.y-0.5,7,11)
       end
     end
   end
+
+  shieldcircle(p,p.owner)
 
   --damage
   if p.damaged == true and p.shield == false then
@@ -160,16 +152,27 @@ function cardraw(p)
         circ(p.x+p.attack_offset.x,p.y+p.attack_offset.y,10,p.clr)
       end
     else
-      circ(p.x,p.y,10,7)
+      circ(p.x,p.y,7,7)
     end
     if p.dead == false then --reticule
-    circfill(p.x+10*sin(p.rot),p.y+10*cos(p.rot),1,p.clr)
-    circfill(p.x+10*sin(p.dir),p.y+10*cos(p.dir),1,7)
+      line(p.x+9*sin(p.rot),p.y+9*cos(p.rot),p.x+11*sin(p.rot),p.y+11*cos(p.rot),p.clr)
+      line(p.x+9*sin(p.dir),p.y+9*cos(p.dir),p.x+11*sin(p.dir),p.y+11*cos(p.dir),7)
     elseif p.dead == true then --cross if dead
-      line(p.x-7,p.y-7,p.x+7,p.y+7,7)
-      line(p.x+7,p.y-7,p.x-7,p.y+7,7)
+      line(p.x-5,p.y-5,p.x+5,p.y+5,7)
+      line(p.x+5,p.y-5,p.x-5,p.y+5,7)
     end
   end
+
+  if p.active == true then
+    local next = p.nr + 1
+    if p.nr == 3 or p.nr == 6 then
+      next = p.nr - 2
+    end
+    local x = car[next].x
+    local y = car[next].y
+    circ(x+5,y+5,1,p.clr)
+  end
+
 end
 
 function tracks(c)
@@ -477,9 +480,7 @@ function ui(x,y,c,p)
   pal()
   --special status
   if c.status == "danger" and c.dead == false then
-    pal(7,10)
-    spr(80,x,y+status_position,4,1)
-    pal()
+    if every(6,8) == true then spr(80,x,y+status_position,4,1) end
   elseif c.status == "auto" and c.dead == false then
     spr(64,x,y+status_position,4,1)
   end
@@ -679,14 +680,15 @@ end
 
 function drawshield(x,y,p)
   if p.guage >= 1 then
-    rectfill(x,y,x+(30*(p.guage/5)),y+6,11)
+    line(x,y,x+(94*(p.guage/5)),y,7)
+    if p.guage < 2.5 then line(x,y,x+(94*(p.guage/5)),y,10) end
     for c = 1*p.nr,3*p.nr do
       if car[c].shield == true and every(2,4) == true then
-        rectfill(x,y,x+(30*(p.guage/5)),y+6,10)
+        line(x,y,x+(94*(p.guage/5)),y,11)
       end
     end
   elseif p.guage < 1 and every(2,3) == true then
-    rectfill(x,y,x+(30*(p.guage/5)),y+6,7)
+    line(x,y,x+(94*(p.guage/5)),y,7)
   end
 end
 
@@ -712,13 +714,13 @@ function _draw()
   circ(center.x,center.y,arena,7)
   camera(cam.x,cam.y)
   for x = 1,3 do
-   ui(cam.x+1,cam.y+1,car[x],p1)
+   ui(cam.x+3,cam.y+2,car[x],p1)
   end
   for x = 4,6 do
-   ui(cam.x,cam.y+120,car[x],p2)
+   ui(cam.x-2,cam.y+119,car[x],p2)
   end
-  drawshield(cam.x+90,cam.y+1,p1)
-  drawshield(cam.x+1,cam.y+120,p2)
+  drawshield(cam.x+3,cam.y,p1)
+  drawshield(cam.x+30,cam.y+127,p2)
 
   if p1.winner == true then
     local y = 62

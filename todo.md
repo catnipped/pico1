@@ -11,18 +11,18 @@
 <!-- - sudden death? -->
 <!-- - explosion animation -->
 <!-- - background -->
-- SHIELD
+<!-- - SHIELD -->
   <!-- - hold x to shield -->
   <!-- - only active car -->
   <!-- - no shooting while shielding -->
   <!-- - limited time -->
   <!-- - chip damage -->
   <!-- - emergency brake = x+z -->
-  - UI/gfx
+  <!-- - UI/gfx -->
 - UI feedback
   <!-- - blinking lights -->
-  - blinking alerts
-  - which car i switch 2
+  <!-- - blinking alerts -->
+  <!-- - which car i switch 2 -->
   - countdown
   - smaller death circle
 - sound effects
