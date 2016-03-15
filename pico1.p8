@@ -11,6 +11,7 @@ arena = 67
 sprite = 8
 maintimer = 60 * 30
 freeze = 0
+frames = 0
 
 cam = {}
 cam.x = 0
@@ -25,6 +26,7 @@ p1.y = 0
 p1.car = 1
 p1.winner = false
 p1.deathcount = 0
+p1.guage = 5
 
 p2 = {}
 p2.nr = 2
@@ -34,12 +36,14 @@ p2.y = 0
 p2.car = 1
 p2.winner = false
 p2.deathcount = 0
+p2.guage = 5
 
 function carspawn (nr,plr) --car array
   car[nr] = {}
   car[nr].x = (plr.nr-1)*64+36
   car[nr].y = 0
   car[nr].hp = 5
+  car[nr].owner = plr.nr
   car[nr].status = "happy"
   car[nr].dead = false
   car[nr].death_counter = 0
@@ -70,9 +74,16 @@ function carspawn (nr,plr) --car array
   car[nr].tracks_right_y = {}
   car[nr].tracks_length = 0
   car[nr].tracks_counter = 0
+  car[nr].shield = false
+end
+
+function every(a,b) -- a: number of frames true b: 1-30 where 1 is every frame, 30 is once each second.
+  a = a-1
+  return frames % b < a
 end
 
 function cardraw(p)
+
 
   --wheels
   if p.dead == false then
@@ -99,10 +110,6 @@ function cardraw(p)
   else
     circfill(p.x+1*sin(p.turret+0.15),p.y+1*cos(p.turret+0.15),0,11)
   end
-  --damage
-  if p.damaged == true then
-    circfill(p.x-3+rnd(3),p.y-3+rnd(3),2,7)
-  end
 
   --turret
   if p.hit == false then
@@ -110,6 +117,38 @@ function cardraw(p)
     line(p.x+2*sin(p.turret),p.y+2*cos(p.turret),p.x+4*sin(p.turret),p.y+4*cos(p.turret),6)
   else
     line(p.x+2*sin(p.turret),p.y+2*cos(p.turret),p.x+6*sin(p.turret),p.y+6*cos(p.turret),7)
+  end
+
+  --shield
+  if p.owner == 1 then
+    if p.shield == true and p1.guage < 1 then
+      if every(2,3) == true then
+        circfill(p.x-0.5,p.y-0.5,7,7)
+      end
+    elseif p.shield == true then
+      circfill(p.x-0.5,p.y-0.5,7,11)
+      if every(2,4) == true then
+        circfill(p.x-0.5,p.y-0.5,7,10)
+      end
+    end
+  elseif p.owner == 2 then
+    if p.shield == true and p2.guage < 1 then
+      if every(2,3) == true then
+        circfill(p.x-0.5,p.y-0.5,7,7)
+      end
+    elseif p.shield == true then
+      circfill(p.x-0.5,p.y-0.5,7,11)
+      if every(2,4) == true then
+        circfill(p.x-0.5,p.y-0.5,7,10)
+      end
+    end
+  end
+
+  --damage
+  if p.damaged == true and p.shield == false then
+    circfill(p.x-3+rnd(3),p.y-3+rnd(3),3,7)
+  elseif p.damaged == true and p.shield == true then
+    circfill(p.x-3+rnd(7),p.y-3+rnd(7),2,5)
   end
 
   --gui
@@ -172,8 +211,8 @@ end
 
 function attack_roll(c)
   c.hit = false
-  if c.dead == false and pythagoras(c.x+c.attack_offset.x,c.y+c.attack_offset.y,car[c.target]) < 10+c.vel then
-    if c.attack_counter == 0 then
+  if c.dead == false and pythagoras(c.x+c.attack_offset.x,c.y+c.attack_offset.y,car[c.target]) < 12+c.vel then
+    if c.attack_counter == 0 and c.shield == false then
       c.hit = true
       car[c.target].damaged = true
       c.attack_counter += 1
@@ -186,7 +225,9 @@ end
 
 function health(c)
   if c.damaged == true then
-    if c.damagedcounter == 0 then c.hp -= 0.1 end
+
+    if c.damagedcounter == 0 and c.shield == true then c.hp -= 0.08
+    elseif c.damagedcounter == 0 and c.shield == false then c.hp -= 0.2 end
 
     c.damagedcounter += 1
     if c.damagedcounter > 1 then
@@ -209,8 +250,8 @@ function collision(c)
 
     if collide == true then
       if c.timer == 0 then
-        c.rot += rnd(1)/2
         c.vel -= 1
+        c.rot += rnd(1)/20
       end
     end
   end
@@ -218,7 +259,7 @@ function collision(c)
   if collide == true then
     c.timer += 1
     collide = false
-    if c.timer > 30 then
+    if c.timer > 10 then
       c.timer = 0
     end
   end
@@ -278,6 +319,10 @@ function control_active(x,plr)
     if btn(0,p) then
       x.dir += -0.03
     end
+
+    if btn(5,p) and plr.guage > 0 then
+      x.shield = true
+    else x.shield = false end
   end
 end
 
@@ -286,6 +331,7 @@ function switch(plr)
     for x = a,b do
       if car[x].active == true then
         car[x].active = false
+        car[x].shield = false
         return x
       end
     end
@@ -459,6 +505,20 @@ function brake(p)
   end
 end
 
+function shield(c,p)
+  if c.shield == true then
+    p.guage -= 0.05
+    if p.guage <= 0 then
+      c.shield = false
+    end
+    c.hitbox = 7
+  elseif c.shield == false then
+    if p.guage < 5 then p.guage += 0.01 end
+    c.hitbox = 3
+  end
+  if p.guage > 5 then p.guage = 5 end
+end
+
 function _init()
   cls()
   function randomizeclr()
@@ -517,6 +577,11 @@ function _update()
     return
   end
 
+  frames += 1
+  if frames > 30 then
+    frames = 0
+  end
+
   --controls
   for x = 1,3 do
     control_active(car[x],p1)
@@ -534,11 +599,11 @@ function _update()
     switch(p2)
   end
 
-  if btnp(5,0) then
+  if btn(5,0) and btn(4,0) then
     brake(p1)
   end
 
-  if btnp(5,1) then
+  if btn(5,1) and btn(4,1) then
     brake(p2)
   end
 
@@ -552,9 +617,11 @@ function _update()
   --turret
   for x = 1,3 do
     turret(car[x],4,6)
+    shield(car[x],p1)
   end
   for x = 4,6 do
     turret(car[x],1,3)
+    shield(car[x],p2)
   end
 
   for x = 1,6 do
@@ -610,6 +677,18 @@ function _update()
   p2.deathcount = 0
 end
 
+function drawshield(x,y,p)
+  if p.guage >= 1 then
+    rectfill(x,y,x+(30*(p.guage/5)),y+6,11)
+    for c = 1*p.nr,3*p.nr do
+      if car[c].shield == true and every(2,4) == true then
+        rectfill(x,y,x+(30*(p.guage/5)),y+6,10)
+      end
+    end
+  elseif p.guage < 1 and every(2,3) == true then
+    rectfill(x,y,x+(30*(p.guage/5)),y+6,7)
+  end
+end
 
 function _draw()
   cls()
@@ -638,6 +717,8 @@ function _draw()
   for x = 4,6 do
    ui(cam.x,cam.y+120,car[x],p2)
   end
+  drawshield(cam.x+90,cam.y+1,p1)
+  drawshield(cam.x+1,cam.y+120,p2)
 
   if p1.winner == true then
     local y = 62

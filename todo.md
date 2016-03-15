@@ -11,16 +11,37 @@
 <!-- - sudden death? -->
 <!-- - explosion animation -->
 <!-- - background -->
+- SHIELD
+  <!-- - hold x to shield -->
+  <!-- - only active car -->
+  <!-- - no shooting while shielding -->
+  <!-- - limited time -->
+  <!-- - chip damage -->
+  <!-- - emergency brake = x+z -->
+  - UI/gfx
 - UI feedback
   <!-- - blinking lights -->
   - blinking alerts
-  - which car i switch
+  - which car i switch 2
+  - countdown
+  - smaller death circle
 - sound effects
+  - throt up/down
+  - shoot + hit
+  - shield
+  - explosion
+  - switch
+  - winner
+  - ready plr
 - music
+  - start
+  - normal
+  - sudden death
 - title?!!!
 - start screen
   - cool illustration
   - title
   - player ready
   - help
+  - credits
 <!-- - win screen -->
