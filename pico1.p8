@@ -2,12 +2,19 @@ pico-8 cartridge // http://www.pico-8.com
 version 5
 __lua__
 
+credits = {}
+credits.s = "                                   <3  a game by ossian boren. <3  super special thanks to: erik svedang, peter bjorklund, anna elwing. <3"
+credits.p = 1
+game_start = false
+start_counter = 30
+end_counter = 90
 deadzone = 0.01
 playercolors = {2,3,4,8,9,12,13,14}
+numberofcolors = 8
 center = {}
 center.x = 64
 center.y = 64
-arena = 60
+arena = 65
 sprite = 8
 maintimer = 60 * 30
 freeze = 0
@@ -19,6 +26,8 @@ cam.y = 0
 car = {}
 
 p1 = {}
+p1.ready = false
+p1.wins = 0
 p1.nr = 1
 p1.clr = 3
 p1.x = 0
@@ -29,6 +38,8 @@ p1.deathcount = 0
 p1.guage = 5
 
 p2 = {}
+p2.ready = false
+p2.wins = 0
 p2.nr = 2
 p2.clr = 14
 p2.x = 0
@@ -520,24 +531,27 @@ function shield(c,p)
   if p.guage > 5 then p.guage = 5 end
 end
 
-function _init()
-  cls()
-  function randomizeclr()
-    p1.clr = playercolors[flr(rnd(8)+1)]
-    del(playercolors,p1.clr)
-    p2.clr = playercolors[flr(rnd(7)+1)]
-  end
-  randomizeclr()
-
-  --generate background
-  for x=0,24,1 do
-    for y=0,24,1 do
-      mset(x,y,flr(rnd(6)+1))
+function drawshield(x,y,p)
+  if p.guage >= 1 then
+    line(x,y,x+(94*(p.guage/5)),y,7)
+    if p.guage < 2.5 then line(x,y,x+(94*(p.guage/5)),y,10) end
+    for c = 1*p.nr,3*p.nr do
+      if car[c].shield == true and every(2,4) == true then
+        line(x,y,x+(94*(p.guage/5)),y,11)
+      end
     end
+  elseif p.guage < 1 and every(2,3) == true then
+    line(x,y,x+(94*(p.guage/5)),y,7)
   end
-  --
+end
 
-  --initiate cars
+function randomizeclr(plr)
+  plr.clr = playercolors[flr(rnd(numberofcolors)+1)]
+  del(playercolors,plr.clr)
+  numberofcolors -= 1
+end
+
+function initiate_cars()
   for x=1,3 do
     carspawn(x,p1)
   end
@@ -567,12 +581,14 @@ function _init()
 
   car[1].active = true
   car[4].active = true
-
-
-  --
 end
 
-function _update()
+function _init()
+  cls()
+end
+
+function game_update()
+  if start_counter > 0 then start_counter -= 1 end
   if freeze > 0 then
     freeze -= 1
     return
@@ -583,38 +599,39 @@ function _update()
     frames = 0
   end
 
-  --controls
-  for x = 1,3 do
-    control_active(car[x],p1)
+  if start_counter == 0 then
+    --controls
+    for x = 1,3 do
+      control_active(car[x],p1)
+    end
+
+    for x = 4,6 do
+      control_active(car[x],p2)
+    end
+
+    if btnp(4,0) then
+      switch(p1)
+    end
+
+    if btnp(4,1) then
+      switch(p2)
+    end
+
+    if btn(5,0) and btn(4,0) then
+      brake(p1)
+    end
+
+    if btn(5,1) and btn(4,1) then
+      brake(p2)
+    end
+
+    current_car(p1)
+    current_car(p2)
+
+    --camera
+    cam.x = lerp(cam.x, lerp(64,lerp(p1.x,p2.x,0.5),0.5)-64, 0.05)
+    cam.y = lerp(cam.y, lerp(64,lerp(p1.y,p2.y,0.5),0.5)-64, 0.05)
   end
-
-  for x = 4,6 do
-    control_active(car[x],p2)
-  end
-
-  if btnp(4,0) then
-    switch(p1)
-  end
-
-  if btnp(4,1) then
-    switch(p2)
-  end
-
-  if btn(5,0) and btn(4,0) then
-    brake(p1)
-  end
-
-  if btn(5,1) and btn(4,1) then
-    brake(p2)
-  end
-
-  current_car(p1)
-  current_car(p2)
-
-  --camera
-  cam.x = lerp(cam.x, lerp(64,lerp(p1.x,p2.x,0.5),0.5)-64, 0.05)
-  cam.y = lerp(cam.y, lerp(64,lerp(p1.y,p2.y,0.5),0.5)-64, 0.05)
-
   --turret
   for x = 1,3 do
     turret(car[x],4,6)
@@ -661,7 +678,7 @@ function _update()
     elseif car[x].hp < 2 then car[x].status = "danger" end
   end
   -- sudden death
-  maintimer -= 1
+  if start_counter == 0 then maintimer -= 1 end
   if arena > 25 then
     if maintimer <= 0 then arena -= 0.03 end
   end
@@ -676,24 +693,27 @@ function _update()
   end
   if p2.deathcount == 3 then p1.winner = true end
   p2.deathcount = 0
-end
-
-function drawshield(x,y,p)
-  if p.guage >= 1 then
-    line(x,y,x+(94*(p.guage/5)),y,7)
-    if p.guage < 2.5 then line(x,y,x+(94*(p.guage/5)),y,10) end
-    for c = 1*p.nr,3*p.nr do
-      if car[c].shield == true and every(2,4) == true then
-        line(x,y,x+(94*(p.guage/5)),y,11)
-      end
+  if p1.winner == true or p2.winner == true then end_counter -= 1 end
+  if end_counter < 0 then
+    if p1.winner == true then
+      p1.wins += 1
+      p2.ready = false
+      p2.wins = 0
+      add(playercolors,p2.clr)
     end
-  elseif p.guage < 1 and every(2,3) == true then
-    line(x,y,x+(94*(p.guage/5)),y,7)
+    if p2.winner == true then
+      p2.wins += 1
+      p1.ready = false
+      p1.wins = 0
+      add(playercolors,p1.clr)
+    end
+    game_start = false
   end
 end
 
-function _draw()
-  cls()
+
+function game_draw()
+
   map(0,0,-32,-32,24,24)
 
   for x=1,6 do
@@ -728,7 +748,7 @@ function _draw()
   drawshield(cam.x+3,cam.y,p1)
   drawshield(cam.x+30,cam.y+127,p2)
 
-  if maintimer >= 0 then
+  if maintimer >= 0 and start_counter == 0 then
     local x = center.x+arena*sin(maintimer/1800-0.25)
     local y = center.y+arena*cos(maintimer/1800-0.25)
 
@@ -758,6 +778,95 @@ function _draw()
     spr(86,cam.x+52,cam.y+y,5,1)
   end
 
+  if start_counter > 0 then spr(70+(start_counter/30),center.x-3,center.y-3) end
+end
+
+function _update()
+  if game_start == false then
+    if btnp(4,0) == true then
+      p1.ready = true
+      randomizeclr(p1)
+    end
+    if btnp(4,1) == true then
+       p2.ready = true
+       randomizeclr(p2)
+    end
+    if p1.ready == true and btnp(5,0) == true then
+      p1.ready = false
+      p1.wins = 0
+      add(playercolors,p1.clr)
+      numberofcolors += 1
+      start_counter = 30
+    end
+    if p2.ready == true and btnp(5,1) == true then
+      p2.ready = false
+      p2.wins = 0
+      add(playercolors,p2.clr)
+      numberofcolors += 1
+      start_counter = 30
+    end
+    if p1.ready == true and p2.ready == true then
+      start_counter -= 1
+      if start_counter == 0 then
+        game_start = true
+        start_counter = 90
+        --generate background
+        for x=0,24,1 do
+          for y=0,24,1 do
+            mset(x,y,flr(rnd(6)+1))
+          end
+        end
+        initiate_cars()
+      end
+    end
+  end
+  if game_start == true then
+    game_update()
+  end
+end
+
+function title_draw()
+  camera(0,0)
+  if p1.ready == false then
+    local x = center.x-40
+    local y = center.y
+    rectfill(x,y,x+24,y+6,playercolors[flr(rnd(numberofcolors)+1)])
+    print("ready?",x+1,y+1,7)
+  elseif p1.ready == true then
+    local x = center.x-40
+    local y = center.y
+    rectfill(x,y,x+24,y+6,p1.clr)
+    print("ready!",x+1,y+1,7)
+  end
+  if p2.ready == false then
+    local x = center.x+14
+    local y = center.y
+    rectfill(x,y,x+24,y+6,playercolors[flr(rnd(numberofcolors)+1)])
+    print("ready?",x+1,y+1,7)
+  elseif p2.ready == true then
+    local x = center.x+14
+    local y = center.y
+    rectfill(x,y,x+24,y+6,p2.clr)
+    print("ready!",x+1,y+1,7)
+  end
+
+  if p1.wins > 0 then print("wins:" .. p1.wins, center.x-40, center.y+10,6) end
+  if p2.wins > 0 then print("wins:" .. p2.wins, center.x+14,center.y+10,6) end
+
+
+  print(sub(credits.s,1+credits.p,32+credits.p),0,120,7)
+  credits.p += 0.2
+  if credits.p > #credits.s then credits.p = 1 end
+end
+
+function _draw()
+  cls()
+  if game_start == false then
+    title_draw()
+  end
+  if game_start == true then
+    game_draw()
+  end
 end
 
 __gfx__

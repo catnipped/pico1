@@ -41,7 +41,7 @@
 - start screen
   - cool illustration
   - title
-  - player ready
+  <!-- - player ready -->
   - help
   - credits
 <!-- - win screen -->
