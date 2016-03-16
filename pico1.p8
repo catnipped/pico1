@@ -7,7 +7,7 @@ playercolors = {2,3,4,8,9,12,13,14}
 center = {}
 center.x = 64
 center.y = 64
-arena = 67
+arena = 60
 sprite = 8
 maintimer = 60 * 30
 freeze = 0
@@ -545,8 +545,8 @@ function _init()
     carspawn(x,p2)
   end
 
-  car[1].x = center.x -40
-  car[1].y = center.y -40
+  car[1].x = center.x -30
+  car[1].y = center.y -30
   car[1].dir = -0.125
   car[2].x = center.x
   car[2].y = center.y -40
@@ -555,8 +555,8 @@ function _init()
   car[3].y = center.y
   car[3].dir = -0.25
 
-  car[4].x = center.x +40
-  car[4].y = center.y +40
+  car[4].x = center.x +30
+  car[4].y = center.y +30
   car[4].dir = -0.675
   car[5].x = center.x
   car[5].y = center.y +40
@@ -565,7 +565,7 @@ function _init()
   car[6].y = center.y
   car[6].dir = 0.25
 
-  car[2].active = true
+  car[1].active = true
   car[4].active = true
 
 
@@ -662,7 +662,7 @@ function _update()
   end
   -- sudden death
   maintimer -= 1
-  if arena > 30 then
+  if arena > 25 then
     if maintimer <= 0 then arena -= 0.03 end
   end
   -- winners!
@@ -699,16 +699,22 @@ function _draw()
   for x=1,6 do
     tracks(car[x])
   end
-  if maintimer >= 0 then
-    print(flr(maintimer/30),center.x-4,center.y-2,6)
-  else
-    print("!",center.x-4,center.y-2,5)
-  end
 
   for x=1,6 do
     cardraw(car[x])
     if car[x].dead == true then
       death_anim(car[x])
+    end
+  end
+  if maintimer < 0 then
+    if every(3,14) == true then
+      circ(center.x,center.y,arena+3,5)
+    end
+    if every(3,16) == true then
+      circ(center.x,center.y,arena+2,6)
+    end
+    if every(3,18) == true then
+      circ(center.x,center.y,arena+1,6)
     end
   end
   circ(center.x,center.y,arena,7)
@@ -721,6 +727,21 @@ function _draw()
   end
   drawshield(cam.x+3,cam.y,p1)
   drawshield(cam.x+30,cam.y+127,p2)
+
+  if maintimer >= 0 then
+    local x = center.x+arena*sin(maintimer/1800-0.25)
+    local y = center.y+arena*cos(maintimer/1800-0.25)
+
+    if x < cam.x+5 then x = cam.x+5 elseif x > cam.x+123 then x = cam.x+123 end
+    if y < cam.y+13 then y = cam.y+13 elseif y > cam.y+114 then y = cam.y+114 end
+    rectfill(x-4,y-3,x+4,y+3,7)
+    if maintimer/30 >= 10 then
+      print(flr(maintimer/30),x-3,y-2,0)
+    else
+      print("0" .. flr(maintimer/30),x-3,y-2,0)
+    end
+  end
+
 
   if p1.winner == true then
     local y = 62

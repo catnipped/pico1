@@ -19,12 +19,12 @@
   <!-- - chip damage -->
   <!-- - emergency brake = x+z -->
   <!-- - UI/gfx -->
-- UI feedback
+<!-- - UI feedback -->
   <!-- - blinking lights -->
   <!-- - blinking alerts -->
   <!-- - which car i switch 2 -->
-  - countdown
-  - smaller death circle
+  <!-- - countdown -->
+  <!-- - smaller death circle -->
 - sound effects
   - throt up/down
   - shoot + hit
