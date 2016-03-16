@@ -43,5 +43,5 @@
   - title
   <!-- - player ready -->
   - help
-  - credits
+  <!-- - credits -->
 <!-- - win screen -->

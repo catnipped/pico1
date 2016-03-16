@@ -595,7 +595,7 @@ function game_update()
   end
 
   frames += 1
-  if frames > 30 then
+  if frames > 30*100 then
     frames = 0
   end
 
@@ -728,13 +728,13 @@ function game_draw()
   end
   if maintimer < 0 then
     if every(3,14) == true then
-      circ(center.x,center.y,arena+3,5)
+      circ(center.x,center.y,arena+6,5)
     end
     if every(3,16) == true then
-      circ(center.x,center.y,arena+2,6)
+      circ(center.x,center.y,arena+4,6)
     end
     if every(3,18) == true then
-      circ(center.x,center.y,arena+1,6)
+      circ(center.x,center.y,arena+2,6)
     end
   end
   circ(center.x,center.y,arena,7)
@@ -752,7 +752,7 @@ function game_draw()
     local x = center.x+arena*sin(maintimer/1800-0.25)
     local y = center.y+arena*cos(maintimer/1800-0.25)
 
-    if x < cam.x+5 then x = cam.x+5 elseif x > cam.x+123 then x = cam.x+123 end
+    if x < cam.x+4 then x = cam.x+4 elseif x > cam.x+123 then x = cam.x+123 end
     if y < cam.y+13 then y = cam.y+13 elseif y > cam.y+114 then y = cam.y+114 end
     rectfill(x-4,y-3,x+4,y+3,7)
     if maintimer/30 >= 10 then
