@@ -234,6 +234,7 @@ function attack_roll(c)
   if c.dead == false and pythagoras(c.x+c.attack_offset.x,c.y+c.attack_offset.y,car[c.target]) < 12+c.vel then
     if c.attack_counter == 0 and c.shield == false then
       c.hit = true
+      sfx(7)
       car[c.target].damaged = true
       c.attack_counter += 1
     else
@@ -248,7 +249,7 @@ function health(c)
     local old_hp = c.hp
     if c.damagedcounter == 0 and c.shield == true then c.hp -= 0.01
     elseif c.damagedcounter == 0 and c.shield == false then c.hp -= 0.1 end
-    if flr(old_hp) > flr(c.hp) then freeze = 5 end
+    if flr(old_hp) > flr(c.hp) then freeze = 5 sfx(6) end
     c.damagedcounter += 1
     if c.damagedcounter > 1 then
       c.damaged = false
@@ -326,11 +327,13 @@ function control_active(x,plr)
     if btnp(2,p) then
       if x.throt < 5 then
         x.throt += 1
+        sfx(3)
       end
     end
     if btnp(3,p) then
       if x.throt > 0 then
         x.throt += -1
+        sfx(4)
       end
     end
     if btn(1,p) then
@@ -525,6 +528,7 @@ end
 
 function shield(c,p)
   if c.shield == true then
+    if every(2,30) == true then sfx(5) end
     p.guage -= 0.05
     if p.guage <= 0 then
       c.shield = false
@@ -533,6 +537,7 @@ function shield(c,p)
   elseif c.shield == false then
     if p.guage < 5 then p.guage += 0.01 end
     c.hitbox = 3
+    sfx(5 -1)
   end
   if p.guage > 5 then p.guage = 5 end
 end
