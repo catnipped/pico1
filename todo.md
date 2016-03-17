@@ -26,13 +26,13 @@
   <!-- - countdown -->
   <!-- - smaller death circle -->
 - sound effects
-  - throt up/down
-  - shoot + hit
-  - shield
-  - explosion
-  - switch
+  <!-- - throt up/down -->
+  <!-- - shoot + hit
+  - shield -->
+  <!-- - explosion -->
+  <!-- - switch -->
   - winner
-  - ready plr
+  <!-- - ready plr -->
 - music
   - start
   - normal
