@@ -37,11 +37,10 @@
   - start
   - normal
   - sudden death
-- title?!!!
+<!-- - title?!!!
 - start screen
   - cool illustration
-  - title
+  - title -->
   <!-- - player ready -->
-  - help
   <!-- - credits -->
 <!-- - win screen -->
