@@ -31,6 +31,7 @@ car = {}
 
 p1 = {}
 p1.ready = false
+p1.ai = false
 p1.wins = 0
 p1.nr = 1
 p1.clr = 14
@@ -43,6 +44,7 @@ p1.guage = 5
 
 p2 = {}
 p2.ready = false
+p2.ai = false
 p2.wins = 0
 p2.nr = 2
 p2.clr = 3
@@ -55,7 +57,7 @@ p2.guage = 5
 
 function carspawn (nr,plr) --car array
   car[nr] = {}
-  car[nr].x = (plr.nr-1)*64+36
+  car[nr].x = 0
   car[nr].y = 0
   car[nr].hp = 5
   car[nr].owner = plr.nr
@@ -93,7 +95,6 @@ function carspawn (nr,plr) --car array
 end
 
 function every(a,b) -- a: number of frames true b: 1-30 where 1 is every frame, 30 is once each second.
-  a = a-1
   return frames % b < a
 end
 
@@ -151,23 +152,25 @@ function cardraw(p)
 
   shieldcircle(p,p.owner)
 
+end
+
+function cargui(p)
   --damage
   if p.damaged == true and p.shield == false then
     circfill(p.x-3+rnd(3),p.y-3+rnd(3),3,7)
   elseif p.damaged == true and p.shield == true then
     circfill(p.x-3+rnd(7),p.y-3+rnd(7),2,5)
   end
-
   --gui
   if p.active == true then
     if p.dead == false then --circle
       if p.vel > 0 then
-        circ(p.x+p.attack_offset.x,p.y+p.attack_offset.y,10+flr(p.vel),p.clr)
+        circ( p.x + p.attack_offset.x, p.y + p.attack_offset.y, 10+flr(p.vel), p.clr)
       else
-        circ(p.x+p.attack_offset.x,p.y+p.attack_offset.y,10,p.clr)
+        circ( p.x, p.y, 10, p.clr)
       end
     else
-      circ(p.x,p.y,7,7)
+      circ(p.x,p.y,7,p.clr)
     end
     if p.dead == false then --reticule
       local ret = 9
@@ -175,8 +178,8 @@ function cardraw(p)
 
       line(p.x+ret*sin(p.dir),p.y+ret*cos(p.dir),p.x+(ret+3)*sin(p.dir),p.y+(ret+3)*cos(p.dir),7)
     elseif p.dead == true then --cross if dead
-      line(p.x-5,p.y-5,p.x+5,p.y+5,7)
-      line(p.x+5,p.y-5,p.x-5,p.y+5,7)
+      line(p.x-5,p.y-5,p.x+5,p.y+5,p.clr)
+      line(p.x+5,p.y-5,p.x-5,p.y+5,p.clr)
     end
   end
 
@@ -185,11 +188,10 @@ function cardraw(p)
     if p.nr == 3 or p.nr == 6 then
       next = p.nr - 2
     end
-    local x = car[next].x
-    local y = car[next].y
-    circ(x+5,y+5,1,p.clr)
+    local nx = car[next].x
+    local ny = car[next].y
+    circ(nx+5,ny+5,1,p.clr)
   end
-
 end
 
 function tracks(c)
@@ -343,7 +345,7 @@ function control_active(x,plr)
       x.dir += -0.03
     end
 
-    if btn(5,p) and plr.guage > 0 then
+    if btn(5,p) and plr.guage > 0 and x.dead == false then
       x.shield = true
     else x.shield = false end
   end
@@ -528,7 +530,7 @@ end
 
 function shield(c,p)
   if c.shield == true then
-    if every(2,30) == true then sfx(5) end
+    if every(1,5) == true then sfx(5, -1, 1) end
     p.guage -= 0.05
     if p.guage <= 0 then
       c.shield = false
@@ -537,7 +539,6 @@ function shield(c,p)
   elseif c.shield == false then
     if p.guage < 5 then p.guage += 0.01 end
     c.hitbox = 3
-    sfx(5 -1)
   end
   if p.guage > 5 then p.guage = 5 end
 end
@@ -603,6 +604,44 @@ function _init()
   end
 end
 
+function ai(plr)
+  local a = 1
+  local b = 3
+  if plr.nr == 1 then a=1 b=3
+  elseif plr.nr == 2 then a=4 b=6 end
+
+  if every(1,60+rnd(30)) == true and rnd(10) > 5 then
+    switch(plr) sfx(2)
+    for x = a,b do
+      if car[x].active == true and car[x].dead == true then switch(plr) end
+    end
+    for x = a,b do
+      if car[x].active == true and car[x].dead == true then switch(plr) end
+    end
+  end
+
+  for x = a,b do
+    if car[x].active == true then
+      local cartarget = car[x].target
+      local distance = pythagoras(car[x].x,car[x].y,car[cartarget])
+
+      local target = atan2(car[cartarget].y-car[x].y,car[cartarget].x-car[x].x)
+      car[x].dir = rotlerp(car[x].dir,target,0.1)
+
+      if distance < 10 then car[x].dir += rnd(0.01) end
+      if car[x].damaged == true and distance > 10-car[x].vel and car[x].dead == false then car[x].shield = true end
+      if every(1,30+rnd(30)) == true then
+        if distance > 15 and car[x].throt < 5 then
+          if rnd(10) > 6 then car[x].throt += 1 sfx(3) end
+        elseif car[x].throt > 0 and car[x].throt < 5 then
+          if rnd(10) > 2 then car[x].throt += flr(rnd(2)) sfx(3) else car[x].throt -= flr(rnd(2)) sfx(4) end
+        end
+      end
+    end
+  end
+
+end
+
 function game_update()
   if start_counter > 0 then start_counter -= 1 end
 
@@ -614,31 +653,36 @@ function game_update()
 
   if start_counter == 0 then
     --controls
-    for x = 1,3 do
-      control_active(car[x],p1)
-    end
+    if p1.ai == false then
+      for x = 1,3 do
+        control_active(car[x],p1)
+      end
 
-    for x = 4,6 do
-      control_active(car[x],p2)
-    end
+      if btnp(4,0) then
+        switch(p1)
+        sfx(2)
+      end
 
-    if btnp(4,0) then
-      switch(p1)
-      sfx(2)
-    end
+      if btn(5,0) and btn(4,0) then
+        brake(p1)
+      end
+    elseif p1.ai == true then ai(p1) end
 
-    if btnp(4,1) then
-      switch(p2)
-      sfx(2)
-    end
+    if p2.ai == false then
 
-    if btn(5,0) and btn(4,0) then
-      brake(p1)
-    end
+      for x = 4,6 do
+        control_active(car[x],p2)
+      end
 
-    if btn(5,1) and btn(4,1) then
-      brake(p2)
-    end
+      if btnp(4,1) then
+        switch(p2)
+        sfx(2)
+      end
+
+      if btn(5,1) and btn(4,1) then
+        brake(p2)
+      end
+    elseif p2.ai == true then ai(p2) end
 
     current_car(p1)
     current_car(p2)
@@ -736,9 +780,10 @@ function game_update()
     game_start = false
     end_counter = 90
     start_counter = 30
+    maintimer = 60 * 30
+    car = {}
   end
 end
-
 
 function game_draw()
 
@@ -750,9 +795,12 @@ function game_draw()
 
   for x=1,6 do
     cardraw(car[x])
+  end
+  for x=1,6 do
     if car[x].dead == true then
       death_anim(car[x])
     end
+    cargui(car[x])
   end
   if maintimer < 0 then
     if every(3,14) == true then
@@ -790,7 +838,6 @@ function game_draw()
     end
   end
 
-
   if p1.winner == true then
     local y = 62
     rectfill(cam.x,cam.y+y-1,cam.x+128,cam.y+y+5,p1.clr)
@@ -809,66 +856,106 @@ function game_draw()
   if start_counter > 0 then spr(70+(start_counter/30),center.x-3,center.y-3) end
 end
 
-function _update()
+function title_update()
+  frames += 1
+  gfx_p1_target = center.x-55
+  gfx_p2_target = center.x-5
+  logo_target = center.y+8
+  gfx_circle_target = 0
 
-  if game_start == false then
-    gfx_p1_target = center.x-55
-    gfx_p2_target = center.x-5
-    logo_target = center.y+8
-    gfx_circle_target = 0
+  start_gfx_logo = lerp(start_gfx_logo,logo_target,0.05)
+  start_gfx_p1 = lerp(start_gfx_p1,gfx_p1_target,0.05)
+  start_gfx_p2 = lerp(start_gfx_p2,gfx_p2_target,0.05)
+  start_gfx_circle = lerp(start_gfx_circle,gfx_circle_target,0.05)
 
-    start_gfx_logo = lerp(start_gfx_logo,logo_target,0.05)
-    start_gfx_p1 = lerp(start_gfx_p1,gfx_p1_target,0.05)
-    start_gfx_p2 = lerp(start_gfx_p2,gfx_p2_target,0.05)
-    start_gfx_circle = lerp(start_gfx_circle,gfx_circle_target,0.05)
-
-    if btnp(4,0) == true and p1.ready == false then
-      p1.ready = true
-      randomizeclr(p1)
-      sfx(0)
-    end
-    if btnp(4,1) == true and p2.ready == false then
-       p2.ready = true
-       randomizeclr(p2)
-       sfx(0)
-    end
-    if p1.ready == true and btnp(5,0) == true then
-      p1.ready = false
-      p1.wins = 0
-      add(playercolors,p1.clr)
-      numberofcolors += 1
-      start_counter = 30
-    end
-    if p2.ready == true and btnp(5,1) == true then
-      p2.ready = false
-      p2.wins = 0
-      add(playercolors,p2.clr)
-      numberofcolors += 1
-      start_counter = 30
-    end
-    if p1.ready == true and p2.ready == true then
-      start_counter -= 1
-      if start_counter < 0 then
-        game_start = true
-        start_counter = 90
-        --generate background
-        for x=0,24,1 do
-          for y=0,24,1 do
-            mset(x,y,flr(rnd(6)+1))
-          end
-        end
-        initiate_cars()
-        p1.winner = false
-        p1.deathcount = 0
-        p1.guage = 5
-        p2.winner = false
-        p2.deathcount = 0
-        p2.guage = 5
-      end
-    end
+  if frames > 30*60 then
+    p1.ready = true
+    p2.ready = true
+    p1.ai = true
+    p2.ai = true
   end
-  if game_start == true then
-    game_update()
+
+  if btnp(4,0) == true and p1.ready == false then
+    p1.ready = true
+    randomizeclr(p1)
+    sfx(0)
+  end
+  if btnp(4,1) == true and p2.ready == false then
+     p2.ready = true
+     randomizeclr(p2)
+     sfx(0)
+  end
+
+  if btnp(5,0) == true and p1.ready == false then
+    p1.ready = true
+    p1.ai = true
+    randomizeclr(p1)
+    sfx(0)
+  end
+  if btnp(5,1) == true and p2.ready == false then
+     p2.ready = true
+     p2.ai = true
+     randomizeclr(p2)
+     sfx(0)
+  end
+
+  if btnp(4,0) == true and p1.ai == true then
+    p1.ai = false
+    p1.ready = false
+    p1.wins = 0
+    add(playercolors,p1.clr)
+    numberofcolors += 1
+    start_counter = 30
+  end
+  if btnp(4,1) == true and p2.ai == true then
+    p2.ai = false
+    p2.ready = false
+    p2.wins = 0
+    add(playercolors,p2.clr)
+    numberofcolors += 1
+    start_counter = 30
+  end
+
+
+  if p1.ready == true and btnp(5,0) == true and p1.ai == false then
+    p1.ready = false
+    p1.wins = 0
+    add(playercolors,p1.clr)
+    numberofcolors += 1
+    start_counter = 30
+  end
+  if p2.ready == true and btnp(5,1) == true and p2.ai == false then
+    p2.ready = false
+    p2.wins = 0
+    add(playercolors,p2.clr)
+    numberofcolors += 1
+    start_counter = 30
+  end
+  if p1.ready == true and p2.ready == true then
+    start_counter -= 1
+    if start_counter < 0 then
+
+      start_counter = 90
+
+      --generate background
+      for x=0,24,1 do
+        for y=0,24,1 do
+          mset(x,y,flr(rnd(6)+1))
+        end
+      end
+
+      initiate_cars()
+      p1.winner = false
+      p1.deathcount = 0
+      p1.guage = 5
+      p2.winner = false
+      p2.deathcount = 0
+      p2.guage = 5
+      arena = 65
+      cam.x = 0
+      cam.y = 0
+      game_start = true
+    end
   end
 end
 
@@ -925,6 +1012,20 @@ function title_draw()
     print("wins:" .. p2.wins, x+1, y+1,0)
   end
 
+  if p1.ai == true then
+    local x = center.x-59
+    local y = start_gfx_logo*1.15
+    rectfill(x,y,x+8,y+6,0)
+    print("ai", x+1, y+1,p1.clr)
+  end
+
+  if p2.ai == true then
+    local x = center.x-59
+    local y = start_gfx_logo*1.30
+    rectfill(x,y,x+8,y+6,0)
+    print("ai", x+1, y+1,p2.clr)
+  end
+
 
   pal(10,p1.clr)
   pal(11,p2.clr)
@@ -937,6 +1038,16 @@ function title_draw()
   if credits.p > #credits.s then credits.p = 1 end
 end
 
+function _update()
+
+  if game_start == false then
+    title_update()
+  end
+  if game_start == true then
+    game_update()
+  end
+end
+
 function _draw()
   cls()
   if game_start == false then
@@ -945,6 +1056,8 @@ function _draw()
   if game_start == true then
     game_draw()
   end
+
+  -- print(stat(1),cam.x+20,cam.y+20,11)
 end
 
 __gfx__
@@ -1114,13 +1227,13 @@ __map__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
 010400003f7703d76038240314402a220230201e410180100c0100a01000016000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-010800000267105661066610766109661076510365102641026410163101631016210162101611000110001100011000000000000000000000000000000000000000000000000000000000000000000000000000
-010400000304104021045710255106300063000630000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000800000207005031090210b01100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000900000b07007031050210201100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0007000410711107411074110711127700c7700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000800000267105661066610766109661076510365102641026410163101631016210162101611006110061100611006000060000600006000060000600006000060000600006000060000600006000060000600
+000400000304104011045010250106300063000630000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+01030000325701a5001a5001a5001a5001a5001a5001a500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500
+010300002b5701a5001a5001a5001a5001a5001a5001a500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500
+0007000010701107211072110711127000c7000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700
 000a00001267001645016150120133200012000220003200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000200003f61100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010200003f62204612016000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
 011000100c173286030e6031c6031c653286030e6031c6030c103286030c1731c6031c653286030e6031c6030e6000e600106000e6000e6000e6000e600006002460126601286010060000600006000060000600
 01200003185160c3160e5160000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006
 01300008103331d443117040000013433243430000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
