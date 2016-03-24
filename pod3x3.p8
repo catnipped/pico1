@@ -794,6 +794,7 @@ function game_update()
     start_counter = 30
     maintimer = 60 * 30
     car = {}
+    frames = 0
   end
 end
 
