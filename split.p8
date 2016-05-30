@@ -3,6 +3,8 @@ version 7
 __lua__
 p = {}
 timeline = {}
+timeline_counter = 1
+timeuntilturn = 0
 
 
 forward = function (m)
@@ -52,23 +54,52 @@ end
 
 function _init()
 	action = {forward,backward,turnr,turnl,uturn,fast}
+
 	p[1] = {}
 	p[1].x = 32
 	p[1].y = 32
 	p[1].dir = 0
-	p[1].inst = {}
 	p[1].load = 0
+
 	p[2] = {}
 	p[2].x = -64
 	p[2].y = 0
 	p[2].dir = 0
 	p[2].load = 0
-	p[2].inst = {}
+
 	palt(12,true)
 	palt(0,false)
+
 	card = {}
 	for a = 0,3 do
 		card[a] = flr(rnd(count(action)))+1
+	end
+
+end
+
+function resetcards()
+	for a = 0,3 do
+		card[a] = flr(rnd(count(action)))+1
+	end
+end
+
+function resettimeline()
+	timeline = {}
+	timeline_counter = 0
+end
+
+function activator()
+	if timeline_counter > count(timeline) then
+		 for m = 1,2 do p[m].load = 0 end
+		 resetcards()
+		 resettimeline()
+		return
+	elseif timeuntilturn == 30 then
+		timeline[timeline_counter](1)
+		timeline_counter += 1
+		timeuntilturn = 0
+	else
+		timeuntilturn += 1
 	end
 end
 
@@ -83,8 +114,11 @@ function _update()
 		end
 
 		if btnp(4,m-1) then
-			timeline[1](m)
+			resetcards()
 		end
+
+		if p[m].load > 3 then activator() end
+
 	end
 end
 
@@ -104,6 +138,7 @@ function _draw()
 		end
 
 		print(count(timeline),5,10,9)
+
 	end
 
 	clip()
@@ -415,4 +450,3 @@ __music__
 00 41424344
 00 41424344
 00 41424344
-
