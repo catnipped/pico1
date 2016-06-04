@@ -2,6 +2,8 @@ pico-8 cartridge // http://www.pico-8.com
 version 7
 __lua__
 p = {}
+mapx = 16
+mapy = 24
 timeline = {}
 timeline_actor = {}
 timeline_counter = 1
@@ -11,23 +13,33 @@ camspeed = 0.2
 frames = 0
 objects = {}
 objid = 1
+cardshuffle = false
+shuffletime = 0
 
-function drill(a)
-	local x = a.x / 8
-	local y = a.y / 8
-	if a.dir == 0 and mget(x,y-1) == 9 then mset(x,y-1,8) a.y += 8 end
-	if a.dir == 2 and mget(x,y+1) == 9 then mset(x,y+1,8) a.y -= 8 end
-	if a.dir == 1 and mget(x+1,y) == 9 then mset(x+1,y,8) a.x -= 8 end
-	if a.dir == 3 and mget(x-1,y) == 9 then mset(x-1,y,8) a.x += 8 end
+function drill(m)
+	local x = p[m].x / 8
+	local y = p[m].y / 8
+	local drilled = false
+	if p[m].dir == 0 and mget(x,y-1) == 9 then mset(x,y-1,8) p[m].y += 8 drilled = true end
+	if p[m].dir == 2 and mget(x,y+1) == 9 then mset(x,y+1,8) p[m].y -= 8 drilled = true end
+	if p[m].dir == 1 and mget(x+1,y) == 9 then mset(x+1,y,8) p[m].x -= 8 drilled = true end
+	if p[m].dir == 3 and mget(x-1,y) == 9 then mset(x-1,y,8) p[m].x += 8 drilled = true end
+	if drilled then
+		cam[m].x += rnd(8)
+		cam[m].x -= rnd(8)
+		cam[m].y += rnd(8)
+		cam[m].y -= rnd(8)
+	end
 end
 
 forward = function (m)
-	drill(p[m])
+	drill(m)
 	if 			p[m].dir == 0 then p[m].y -= 8
 	elseif  p[m].dir == 1 then p[m].x += 8
 	elseif  p[m].dir == 2 then p[m].y += 8
 	elseif  p[m].dir == 3 then p[m].x -= 8
 	end
+	pickup()
 
 end
 
@@ -57,11 +69,20 @@ uturn = function (m)
 end
 
 fast = function (m)
-	if 			p[m].dir == 0 then p[m].y -= 16
-	elseif  p[m].dir == 1 then p[m].x += 16
-	elseif  p[m].dir == 2 then p[m].y += 16
-	elseif  p[m].dir == 3 then p[m].x -= 16
+	drill(m)
+	if 			p[m].dir == 0 then p[m].y -= 8
+	elseif  p[m].dir == 1 then p[m].x += 8
+	elseif  p[m].dir == 2 then p[m].y += 8
+	elseif  p[m].dir == 3 then p[m].x -= 8
 	end
+	pickup()
+	drill(m)
+	if 			p[m].dir == 0 then p[m].y -= 8
+	elseif  p[m].dir == 1 then p[m].x += 8
+	elseif  p[m].dir == 2 then p[m].y += 8
+	elseif  p[m].dir == 3 then p[m].x -= 8
+	end
+	pickup()
 end
 
 function lerp(a,b,t)
@@ -69,8 +90,8 @@ function lerp(a,b,t)
 end
 
 function spawn(type,sprite,chance)
-	for a=0,24 do
-		for b=0,64 do
+	for a=0,mapx do
+		for b=0,mapy do
 			if flr(rnd(chance))+1 > chance-1 and mget(a,b) == 9 then
 				type = {}
 				type.x = a*8
@@ -86,10 +107,16 @@ function spawn(type,sprite,chance)
 end
 
 function _init()
-	for x=0,24 do
-    for y=0,64 do
+	for x=1,mapx-1 do
+    for y=1,mapy-1 do
       mset(x,y,flr(rnd(2)+8))
     end
+	end
+
+	for x = 0,mapx do
+		for y = mapy, mapy+4 do
+			mset(x,y,10)
+		end
 	end
 
 	spawn(gem,33,5)
@@ -97,15 +124,15 @@ function _init()
 	action = {forward,backward,turnr,turnl,uturn,fast}
 
 	p[1] = {}
-	p[1].x = 32
-	p[1].y = 8*64
+	p[1].x = 8*6
+	p[1].y = 8*mapy
 	p[1].dir = 0
 	p[1].load = 0
 	p[1].inv = {}
 
 	p[2] = {}
-	p[2].x = 64
-	p[2].y = 8*64
+	p[2].x = 8*10
+	p[2].y = 8*mapy
 	p[2].dir = 0
 	p[2].load = 0
 	p[2].inv = {}
@@ -122,15 +149,22 @@ function _init()
 
 	card = {}
 	for a = 0,3 do
-		card[a] = flr(rnd(count(action)))+1
+		card[a] = {}
+		card[a].action = flr(rnd(count(action)))+1
+		card[a].rot = -0.3
+		card[a].dir = 0
+		card[a].x = 0
+		card[a].y = 0
 	end
 
 end
 
 function resetcards()
-	for a = 0,3 do
-		card[a] = flr(rnd(count(action)))+1
-	end
+
+		for a = 0,3 do
+			card[a].action = flr(rnd(count(action)))+1
+		end
+	
 end
 
 function resettimeline()
@@ -159,9 +193,9 @@ end
 function pickup()
 	for o in all(objects) do
 		for n = 1,2 do
-			if o.x == p[n].x and o.y == p[n].y then
-				add(p[n].inv,o.id)
-			end
+				if o.x == p[n].x and o.y == p[n].y then
+					add(p[n].inv,o.id)
+				end
 		end
 	end
 end
@@ -177,19 +211,25 @@ function _update()
 		else
 			for c = 0,3 do
 				if btnp(c,m-1) and p[m].load <= 3 then
-					add(timeline,action[card[c]])
+					add(timeline,action[card[c].action])
 					add(timeline_actor,m)
 					p[m].load += 1
 				end
 			end
 
 			if btnp(4,m-1) then
-				resetcards()
+				if cardshuffle == false then
+					cardshuffle = true
+				elseif cardshuffle == true then
+					cardshuffle = false
+					for a = 0,3 do card[a].rot = -0.3 end
+					resetcards()
+				end
 			end
 
 			for id in all(p[m].inv) do
-				objects[id].x = lerp(objects[id].x, p[m].x, 0.01)
-				objects[id].y = lerp(objects[id].y, p[m].y, 0.01)
+				objects[id].x = lerp(objects[id].x, p[m].x, 0.1)
+				objects[id].y = lerp(objects[id].y, p[m].y, 0.1)
 			end
 
 			if p[m].load > 3 then activator() end --change to p[1].load and p[2].load
@@ -197,7 +237,17 @@ function _update()
 
 	end
 
-	pickup()
+	for a = 0,3 do --cards
+		card[a].rot = lerp(card[a].rot,card[a].dir,0.1)
+
+		if cardshuffle == false then
+			card[a].dir = (a+1)*-0.05
+		elseif cardshuffle == true then
+			card[a].dir = 0.1
+		end
+	end
+
+
 
 	if btn(5,0) ~= true then
 		cam[1].x = lerp(cam[1].x, p[1].x-28, camspeed)
@@ -210,8 +260,8 @@ function _update()
 end
 
 function dynamic_rock()
-	for x = 0,24 do
-		for y = 0,64 do
+	for x = 0,mapx do
+		for y = 0,mapy do
 			if mget(x,y) ~= 9 then
 				local z = 0
 				local dir = {}
@@ -263,7 +313,12 @@ function _draw()
 		if m == 2 then clip(0,0,64,128) end
 		if m == 1 then clip(64,0,128,128) end
 
-		map(0,0,0,0,24,64)
+		map(0,0,0,0,mapx+1,mapy+1)
+
+
+		pal(5,0)
+		map(0,mapy+1,0,(mapy+1)*8,mapx+1,mapy+8)
+		pal(5,5)
 
 		for m = 1,2 do
 			pal(5,10+m)
@@ -289,39 +344,48 @@ function _draw()
 	clip()
 	rect(cam[2].x,cam[2].y,cam[2].x+63,cam[2].y+127,11)
 	rect(cam[2].x+64,cam[2].y,cam[2].x+127,cam[2].y+127,12)
-	for a = 1,4 do
-		cardx = cam[2].x+31*a-26
-		cardy = cam[2].y+100
-		rectfill(cardx,cardy,cardx+24,cardy+30,0)
-		rect(cardx,cardy,cardx+24,cardy+30,7)
-		rectfill(cardx,cardy,cardx+7,cardy+7,7)
-		spr(3+a,cardx,cardy)
-		spr(16+card[a-1], cardx+9, cardy+12)
+
+	for a = 0,3 do --cards
+		local offset = 100
+		card[a].x = cam[2].x+52+(offset*sin(card[a].rot-0.375))
+		card[a].y = cam[2].y+190+(offset*cos(card[a].rot-0.375))
+		local x = card[a].x
+		local y = card[a].y
+		local h = 20
+		local w = 16
+		rectfill(x+10,y+2,x+10+w,y+h+2,0)
+		rectfill(x+2,y+2,x+9,y+9,0)
+		rectfill(x+8,y,x+8+w,y+h,7)
+		rectfill(x,y,x+7,y+7,7)
+		spr(3+a+1,x,y)
+		spr(16+card[a].action, x+9, y+12)
+
 	end
 
 	print(count(timeline),cam[2].x+1,cam[2].y+1,9)
-	print(stat(1),cam[2].x+20,cam[2].y+20,5)
-	print(stat(1),cam[2].x+19,cam[2].y+19,14)
+	rectfill(cam[2].x+18,cam[2].y+18,cam[2].x+42,cam[2].y+24,5)
+	print(flr(card[1].y) .. " " .. flr(card[1].x),cam[2].x+19,cam[2].y+19,7)
+	-- print(count(p[1].inv),cam[2].x+19,cam[2].y+19,7)
 end
 
 
 __gfx__
-00000000ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc7c7cc000000000000000000000000000000000000000000000000
-00000000c000000ccccccccc0000ccccccc55cccccc55cccccc33cccccc55ccccccccccccc77cccc000000000000000000000000000000000000000000000000
-00700700c055550ccc0000cc757000ccccc55cccccc55cccccc33cccccc55ccccccccccccccccc77000000000000000000000000000000000000000000000000
-00077000c050750ccc0750cc757570ccc335555cc555533cc555555cc555555ccccccccc7cc7c7cc000000000000000000000000000000000000000000000000
-00077000c057050cc005000c505050ccc335555cc555533cc555555cc555555ccccccccc7ccccccc000000000000000000000000000000000000000000000000
-00700700c055550cc077550c505000ccccc55cccccc55cccccc55cccccc33ccccccccccccc77cccc000000000000000000000000000000000000000000000000
-00000000c000000cc055000c0000ccccccc55cccccc55cccccc55cccccc33cccccccccccc7cc7c77000000000000000000000000000000000000000000000000
-00000000ccccccccc077550ccccccccccccccccccccccccccccccccccccccccccccccccccccccc7c000000000000000000000000000000000000000000000000
-00000000ccc7cccccc777ccccccc7ccccc7cccccc7777cccccc7cccc0000000000000000777c77c77cccccccccccccccccccccc7000000000000000000000000
-00000000cc777ccccc7773cccc7777ccc7777ccc777777cccc777ccc0000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
-00000000c77777cccc7773ccc777777c777777cc7733773cc77777cc0000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
-00000000cc77733ccc7773cc77777733c777777c773c773ccc33333c0000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
-00000000cc7773ccc77777cc7773733ccc7377737737777ccc777ccc0000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
-00000000cc7773cccc77733c7773c3ccccc37773773c7733ccc333cc0000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
-00000000cc7773ccccc733ccc333ccccccccc333c33cc33ccc777ccc0000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
-00000000ccc333cccccc3cccccccccccccccccccccccccccccc333cc0000000000000000cccccccc7ccccccc7c77c777ccccccc7000000000000000000000000
+00000000ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc7c7cc755575550000000000000000000000000000000000000000
+00000000c000000ccccccccc0000ccccccc55cccccc55cccccc00cccccc55ccccccccccccc77cccc555557570000000000000000000000000000000000000000
+00700700c055550ccc0000cc757000ccccc55cccccc55cccccc00cccccc55ccccccccccccccccc77557555750000000000000000000000000000000000000000
+00077000c050750ccc0750cc757570ccc005555cc555500cc555555cc555555ccccccccc7cc7c7cc575755550000000000000000000000000000000000000000
+00077000c057050cc005000c505050ccc005555cc555500cc555555cc555555ccccccccc7ccccccc755575550000000000000000000000000000000000000000
+00700700c055550cc077550c505000ccccc55cccccc55cccccc55cccccc00ccccccccccccc77cccc555557570000000000000000000000000000000000000000
+00000000c000000cc055000c0000ccccccc55cccccc55cccccc55cccccc00cccccccccccc7cc7c77557555750000000000000000000000000000000000000000
+00000000ccccccccc077550ccccccccccccccccccccccccccccccccccccccccccccccccccccccc7c575755550000000000000000000000000000000000000000
+00000000ccc0cccccc000ccccccc0ccccc0cccccc0000cccccc0cccc0000000000000000777c77c77cccccccccccccccccccccc7000000000000000000000000
+00000000cc000ccccc000ccccc0000ccc0000ccc000000cccc000ccc0000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
+00000000c00000cccc000cccc000000c000000cc00cc00ccc00000cc0000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
+00000000cc000ccccc000ccc000000ccc000000c00cc00cccccccccc0000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
+00000000cc000cccc00000cc000c0ccccc0c000c00c0000ccc000ccc0000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
+00000000cc000ccccc000ccc000ccccccccc000c00cc00cccccccccc0000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
+00000000cc000cccccc0cccccccccccccccccccccccccccccc000ccc0000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
+00000000cccccccccccccccccccccccccccccccccccccccccccccccc0000000000000000cccccccc7ccccccc7c77c777ccccccc7000000000000000000000000
 00000000cccccccc00000000000000000000000000000000000000000000000000000000c77c7cccccc777c77ccccccccccccccc777c77c77cccccc700000000
 00000000ccc00ccc00000000000000000000000000000000000000000000000000000000ccccc7cccc7cccccccccccccccccccc7ccccccccccccccc700000000
 00000000cc0750cc00000000000000000000000000000000000000000000000000000000cccccc7cc7cccccc7cccccccccccccc7cccccccc7cccccc700000000
