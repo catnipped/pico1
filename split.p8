@@ -15,6 +15,7 @@ objects = {}
 objid = 1
 cardshuffle = false
 shuffletime = 0
+cardrow = 0
 
 
 fntspr=64
@@ -72,27 +73,31 @@ function drill(m)
 	local x = p[m].x / 8
 	local y = p[m].y / 8
 	local drilled = false
-	if p[m].dir == 0 and mget(x,y-1) == 9 then mset(x,y-1,8) p[m].y += 8 drilled = true end
-	if p[m].dir == 2 and mget(x,y+1) == 9 then mset(x,y+1,8) p[m].y -= 8 drilled = true end
-	if p[m].dir == 1 and mget(x+1,y) == 9 then mset(x+1,y,8) p[m].x -= 8 drilled = true end
-	if p[m].dir == 3 and mget(x-1,y) == 9 then mset(x-1,y,8) p[m].x += 8 drilled = true end
+	if p[m].dir == 0 and mget(x,y-1) == 9 then mset(x,y-1,8) drilled = true end
+	if p[m].dir == 2 and mget(x,y+1) == 9 then mset(x,y+1,8) drilled = true end
+	if p[m].dir == 1 and mget(x+1,y) == 9 then mset(x+1,y,8) drilled = true end
+	if p[m].dir == 3 and mget(x-1,y) == 9 then mset(x-1,y,8) drilled = true end
 	if drilled then
 		cam[m].x += rnd(8)
 		cam[m].x -= rnd(8)
 		cam[m].y += rnd(8)
 		cam[m].y -= rnd(8)
+		return true
+	else
+		return false
 	end
 end
 
 forward = function (m)
-	add(p[m].past,{x = p[m].x,y = p[m].y})
-	drill(m)
-	if 			p[m].dir == 0 then p[m].y -= 8
-	elseif  p[m].dir == 1 then p[m].x += 8
-	elseif  p[m].dir == 2 then p[m].y += 8
-	elseif  p[m].dir == 3 then p[m].x -= 8
+	if drill(m) == false then
+		add(p[m].past,{x = p[m].x,y = p[m].y})
+		if 			p[m].dir == 0 then p[m].y -= 8
+		elseif  p[m].dir == 1 then p[m].x += 8
+		elseif  p[m].dir == 2 then p[m].y += 8
+		elseif  p[m].dir == 3 then p[m].x -= 8
+		end
+		pickup()
 	end
-	pickup()
 
 end
 
@@ -123,22 +128,25 @@ uturn = function (m)
 end
 
 fast = function (m)
-	add(p[m].past,{x = p[m].x,y = p[m].y})
-	drill(m)
-	if 			p[m].dir == 0 then p[m].y -= 8
-	elseif  p[m].dir == 1 then p[m].x += 8
-	elseif  p[m].dir == 2 then p[m].y += 8
-	elseif  p[m].dir == 3 then p[m].x -= 8
+	if drill(m) == false then
+		add(p[m].past,{x = p[m].x,y = p[m].y})
+		if 			p[m].dir == 0 then p[m].y -= 8
+		elseif  p[m].dir == 1 then p[m].x += 8
+		elseif  p[m].dir == 2 then p[m].y += 8
+		elseif  p[m].dir == 3 then p[m].x -= 8
+		end
+		pickup()
 	end
-	pickup()
-	add(p[m].past,{x = p[m].x,y = p[m].y})
-	drill(m)
-	if 			p[m].dir == 0 then p[m].y -= 8
-	elseif  p[m].dir == 1 then p[m].x += 8
-	elseif  p[m].dir == 2 then p[m].y += 8
-	elseif  p[m].dir == 3 then p[m].x -= 8
+
+	if drill(m) == false then
+		add(p[m].past,{x = p[m].x,y = p[m].y})
+		if 			p[m].dir == 0 then p[m].y -= 8
+		elseif  p[m].dir == 1 then p[m].x += 8
+		elseif  p[m].dir == 2 then p[m].y += 8
+		elseif  p[m].dir == 3 then p[m].x -= 8
+		end
+		pickup()
 	end
-	pickup()
 end
 
 function lerp(a,b,t)
@@ -512,6 +520,13 @@ function _draw()
 
 	print(p[1].load,cam[2].x+1,cam[2].y+1,p[1].clr)
 	print(p[2].load,cam[2].x+123,cam[2].y+1,p[2].clr)
+
+	if cardshuffle == false then
+		cardrow = lerp(cardrow,110,0.15)
+	elseif cardshuffle == true then
+		cardrow = lerp(cardrow,80,0.3)
+	end
+	circ(cam[2].x+64,cam[2].y+210,cardrow,7)
 
 	for a = 0,3 do --cards
 		local offset = 100
