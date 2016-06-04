@@ -16,6 +16,58 @@ objid = 1
 cardshuffle = false
 shuffletime = 0
 
+
+fntspr=64
+fntdefaultcol=0
+fntx={}
+fnty={}
+
+--call in _init to setup font
+function initfont()
+ top="abcdefghijklmnopqrstuvwxyz"
+ bot="0123456789.,^?()[]:/\\=\"'+-"
+ fntsprx=(fntspr%16)*8
+ fntspry=flr((fntspr/16))*8
+ for i=1,#top do
+  x=fntsprx+(i-1)*3
+  c=sub(top,i,i)
+  fntx[c]=x
+  fnty[c]=fntspry
+  c=sub(bot,i,i)
+  fntx[c]=x
+  fnty[c]=fntspry+3
+ end
+end
+
+--prints text in 3x3 font
+function print3(str,x,y,col)
+ col=col or fntdefaultcol
+ pal(7,col)
+ for i=1,#str do
+  c=sub(str,i,i)
+  if fntx[c] then
+   sspr(fntx[c],fnty[c],3,3,x+(i-1)*4,y)
+  else
+   print(c,x+(i-1)*4,y-2,col)
+  end
+ end
+ pal(7,7)
+end
+
+function tablecontains(table, element)
+  for _, value in pairs(table) do
+    if value == element then
+      return true
+    end
+  end
+  return false
+end
+
+function _init()
+
+end
+
+
 function drill(m)
 	local x = p[m].x / 8
 	local y = p[m].y / 8
@@ -33,6 +85,7 @@ function drill(m)
 end
 
 forward = function (m)
+	add(p[m].past,{x = p[m].x,y = p[m].y})
 	drill(m)
 	if 			p[m].dir == 0 then p[m].y -= 8
 	elseif  p[m].dir == 1 then p[m].x += 8
@@ -44,6 +97,7 @@ forward = function (m)
 end
 
 backward = function (m)
+	add(p[m].past,{x = p[m].x,y = p[m].y})
 	if 			p[m].dir == 0 then p[m].y += 8
 	elseif  p[m].dir == 1 then p[m].x -= 8
 	elseif  p[m].dir == 2 then p[m].y -= 8
@@ -69,6 +123,7 @@ uturn = function (m)
 end
 
 fast = function (m)
+	add(p[m].past,{x = p[m].x,y = p[m].y})
 	drill(m)
 	if 			p[m].dir == 0 then p[m].y -= 8
 	elseif  p[m].dir == 1 then p[m].x += 8
@@ -76,6 +131,7 @@ fast = function (m)
 	elseif  p[m].dir == 3 then p[m].x -= 8
 	end
 	pickup()
+	add(p[m].past,{x = p[m].x,y = p[m].y})
 	drill(m)
 	if 			p[m].dir == 0 then p[m].y -= 8
 	elseif  p[m].dir == 1 then p[m].x += 8
@@ -107,6 +163,7 @@ function spawn(type,sprite,chance)
 end
 
 function _init()
+	initfont()
 	for x=1,mapx-1 do
     for y=1,mapy-1 do
       mset(x,y,flr(rnd(2)+8))
@@ -114,14 +171,13 @@ function _init()
 	end
 
 	for x = 0,mapx do
-		for y = mapy, mapy+4 do
+		for y = mapy, mapy+2 do
 			mset(x,y,10)
 		end
 	end
 
 	spawn(gem,33,5)
-
-	action = {forward,backward,turnr,turnl,uturn,fast}
+	spawn(crd,17,10)
 
 	p[1] = {}
 	p[1].x = 8*6
@@ -129,6 +185,8 @@ function _init()
 	p[1].dir = 0
 	p[1].load = 0
 	p[1].inv = {}
+	p[1].past = {}
+	p[1].clr = 3
 
 	p[2] = {}
 	p[2].x = 8*10
@@ -136,6 +194,8 @@ function _init()
 	p[2].dir = 0
 	p[2].load = 0
 	p[2].inv = {}
+	p[2].past = {}
+	p[2].clr = 13
 
 	cam[1] = {}
 	cam[1].x = p[1].x-28
@@ -147,24 +207,107 @@ function _init()
 	palt(12,true)
 	palt(0,false)
 
+	cards = {
+		{ txt = {"for","ward"},
+			action = forward,
+			clr = 5,
+			spr = 80
+		},
+		{ txt = {"for","ward"},
+			action = forward,
+			clr = 5,
+			spr = 80
+		},
+		{ txt = {"for","ward"},
+			action = forward,
+			clr = 5,
+			spr = 80
+		},
+		{ txt = {"for","ward"},
+			action = forward,
+			clr = 5,
+			spr = 80
+		},
+		{ txt = {"back","ward"},
+			action = backward,
+			clr = 5,
+			spr = 81
+		},
+		{ txt = {"back","ward"},
+			action = backward,
+			clr = 5,
+			spr = 81
+		},
+		{
+			txt = {"turn","left"},
+			action = turnl,
+			clr = 5,
+			spr = 83
+		},
+		{
+			txt = {"turn","left"},
+			action = turnl,
+			clr = 5,
+			spr = 83
+		},
+		{
+			txt = {"turn","rght"},
+			action = turnr,
+			clr = 5,
+			spr = 82
+		},
+		{
+			txt = {"turn","rght"},
+			action = turnr,
+			clr = 5,
+			spr = 82
+		},
+		{
+			txt = {"u-","turn"},
+			action = uturn,
+			clr = 5,
+			spr = 84
+		},
+		{
+			txt = {"fast","frwd"},
+			action = fast,
+			clr = 5,
+			spr = 85
+		},
+		{
+			txt = {"fast","frwd"},
+			action = fast,
+			clr = 5,
+			spr = 85
+		}
+	}
+
 	card = {}
 	for a = 0,3 do
+		local x = flr(rnd(count(cards)))+1
 		card[a] = {}
-		card[a].action = flr(rnd(count(action)))+1
+		card[a].action = cards[x].action
 		card[a].rot = -0.3
 		card[a].dir = 0
 		card[a].x = 0
 		card[a].y = 0
+		card[a].txt = {cards[x].txt[1],cards[x].txt[2]}
+		card[a].clr = cards[x].clr
+		card[a].spr = cards[x].spr
 	end
 
 end
 
 function resetcards()
 
-		for a = 0,3 do
-			card[a].action = flr(rnd(count(action)))+1
-		end
-	
+	for a = 0,3 do
+		local x = flr(rnd(count(cards)))+1
+		card[a].action = cards[x].action
+		card[a].txt = {cards[x].txt[1],cards[x].txt[2]}
+		card[a].clr = cards[x].clr
+		card[a].spr = cards[x].spr
+	end
+
 end
 
 function resettimeline()
@@ -177,7 +320,8 @@ function activator()
 	if timeline_counter > count(timeline) then
 		 for m = 1,2 do p[m].load = 0 end
 		 resetcards()
-		--  resettimeline()
+		 cardshuffle = false
+		 for a = 0,3 do card[a].rot = -0.3 end
 		return
 	elseif timeuntilturn == 30 then
 		x = timeline_actor[timeline_counter]
@@ -193,9 +337,11 @@ end
 function pickup()
 	for o in all(objects) do
 		for n = 1,2 do
-				if o.x == p[n].x and o.y == p[n].y then
-					add(p[n].inv,o.id)
-				end
+
+			if o.x == p[n].x and o.y == p[n].y and tablecontains(p[n].inv, o.id) == false then
+				add(p[n].inv, o.id)
+			end
+
 		end
 	end
 end
@@ -211,7 +357,7 @@ function _update()
 		else
 			for c = 0,3 do
 				if btnp(c,m-1) and p[m].load <= 3 then
-					add(timeline,action[card[c].action])
+					add(timeline,card[c].action)
 					add(timeline_actor,m)
 					p[m].load += 1
 				end
@@ -227,12 +373,21 @@ function _update()
 				end
 			end
 
-			for id in all(p[m].inv) do
-				objects[id].x = lerp(objects[id].x, p[m].x, 0.1)
-				objects[id].y = lerp(objects[id].y, p[m].y, 0.1)
+			if #p[m].inv > 0 then
+				for z = 1,count(p[m].inv) do
+					local id = p[m].inv[z]
+					local a = #p[m].past - z +1
+					if a > 0 then
+						objects[id].x = lerp(objects[id].x, p[m].past[a].x, 0.1)
+						objects[id].y = lerp(objects[id].y, p[m].past[a].y, 0.1)
+					end
+				end
 			end
 
-			if p[m].load > 3 then activator() end --change to p[1].load and p[2].load
+			if p[m].load > 3 then --change to p[1].load and p[2].load
+				cardshuffle = true
+				activator()
+			end
 		end
 
 	end
@@ -247,14 +402,12 @@ function _update()
 		end
 	end
 
-
-
 	if btn(5,0) ~= true then
-		cam[1].x = lerp(cam[1].x, p[1].x-28, camspeed)
+		cam[1].x = lerp(cam[1].x, p[1].x-30, camspeed)
 		cam[1].y = lerp(cam[1].y, p[1].y-64, camspeed)
 	end
 	if btn(5,1) ~= true then
-		cam[2].x = lerp(cam[2].x, p[2].x-92, camspeed)
+		cam[2].x = lerp(cam[2].x, p[2].x-90, camspeed)
 		cam[2].y = lerp(cam[2].y, p[2].y-64, camspeed)
 	end
 end
@@ -312,16 +465,19 @@ function _draw()
 
 		if m == 2 then clip(0,0,64,128) end
 		if m == 1 then clip(64,0,128,128) end
-
+		rect(-1,-1,((mapx+1)*8),((mapy+3)*8),7)
 		map(0,0,0,0,mapx+1,mapy+1)
-
 
 		pal(5,0)
 		map(0,mapy+1,0,(mapy+1)*8,mapx+1,mapy+8)
 		pal(5,5)
-
+		for o in all(objects) do
+			pal(5,p[m].clr)
+			spr(o.spr,o.x,o.y)
+			pal(5,5)
+		end
 		for m = 1,2 do
-			pal(5,10+m)
+			pal(5,p[m].clr)
 			spr(1,p[m].x,p[m].y) --body
 			--drill
 			if p[m].dir == 0 then spr(2,p[m].x,p[m].y-6)
@@ -332,40 +488,53 @@ function _draw()
 			pal(5,5)
 		end
 
-		for o in all(objects) do
-			pal(5,o.clr)
-			spr(o.spr,o.x,o.y)
-			pal(5,5)
-		end
+
 
 		camera(cam[m].x,cam[m].y)
 	end
 
 	clip()
-	rect(cam[2].x,cam[2].y,cam[2].x+63,cam[2].y+127,11)
-	rect(cam[2].x+64,cam[2].y,cam[2].x+127,cam[2].y+127,12)
+	--ui
+	line(cam[2].x+63,cam[2].y,cam[2].x+63,cam[2].y+127,p[1].clr)
+	line(cam[2].x+64,cam[2].y,cam[2].x+64,cam[2].y+127,p[2].clr)
+	rectfill(cam[2].x,cam[2].y,cam[2].x+128,cam[2].y+6,0)
+	line(cam[2].x,cam[2].y+7,cam[2].x+63,cam[2].y+7,p[1].clr)
+	line(cam[2].x+64,cam[2].y+7,cam[2].x+128,cam[2].y+7,p[2].clr)
+	spr(18,cam[2].x,cam[2].y+8,3,3)
+	spr(18,cam[2].x+39,cam[2].y+8,3,3,true,false)
+	spr(18,cam[2].x,cam[2].y+104,3,3,false,true)
+	spr(18,cam[2].x+39,cam[2].y+104,3,3,true,true)
+
+	spr(18,cam[2].x+65,cam[2].y+8,3,3)
+	spr(18,cam[2].x+104,cam[2].y+8,3,3,true,false)
+	spr(18,cam[2].x+65,cam[2].y+104,3,3,false,true)
+	spr(18,cam[2].x+104,cam[2].y+104,3,3,true,true)
+
+	print(p[1].load,cam[2].x+1,cam[2].y+1,p[1].clr)
+	print(p[2].load,cam[2].x+123,cam[2].y+1,p[2].clr)
 
 	for a = 0,3 do --cards
 		local offset = 100
-		card[a].x = cam[2].x+52+(offset*sin(card[a].rot-0.375))
-		card[a].y = cam[2].y+190+(offset*cos(card[a].rot-0.375))
+		card[a].x = cam[2].x+51+(offset*sin(card[a].rot-0.375))
+		card[a].y = cam[2].y+195+(offset*cos(card[a].rot-0.375))
 		local x = card[a].x
 		local y = card[a].y
-		local h = 20
+		local h = 16
 		local w = 16
-		rectfill(x+10,y+2,x+10+w,y+h+2,0)
-		rectfill(x+2,y+2,x+9,y+9,0)
+		rectfill(x+7,y-1,x+9+w,y+h+1,0)
+		rectfill(x-1,y-1,x+8,y+8,0)
 		rectfill(x+8,y,x+8+w,y+h,7)
 		rectfill(x,y,x+7,y+7,7)
+		spr(card[a].spr, x+9, y+9)
+		print3(card[a].txt[1],x+9,y+1,card[a].clr)
+		print3(card[a].txt[2],x+9,y+5,card[a].clr)
 		spr(3+a+1,x,y)
-		spr(16+card[a].action, x+9, y+12)
-
 	end
 
-	print(count(timeline),cam[2].x+1,cam[2].y+1,9)
+
 	rectfill(cam[2].x+18,cam[2].y+18,cam[2].x+42,cam[2].y+24,5)
-	print(flr(card[1].y) .. " " .. flr(card[1].x),cam[2].x+19,cam[2].y+19,7)
-	-- print(count(p[1].inv),cam[2].x+19,cam[2].y+19,7)
+	-- print(stat(1),cam[2].x+19,cam[2].y+19,7)
+	print(count(p[1].inv),cam[2].x+19,cam[2].y+19,7)
 end
 
 
@@ -378,46 +547,46 @@ __gfx__
 00700700c055550cc077550c505000ccccc55cccccc55cccccc55cccccc00ccccccccccccc77cccc555557570000000000000000000000000000000000000000
 00000000c000000cc055000c0000ccccccc55cccccc55cccccc55cccccc00cccccccccccc7cc7c77557555750000000000000000000000000000000000000000
 00000000ccccccccc077550ccccccccccccccccccccccccccccccccccccccccccccccccccccccc7c575755550000000000000000000000000000000000000000
-00000000ccc0cccccc000ccccccc0ccccc0cccccc0000cccccc0cccc0000000000000000777c77c77cccccccccccccccccccccc7000000000000000000000000
-00000000cc000ccccc000ccccc0000ccc0000ccc000000cccc000ccc0000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
-00000000c00000cccc000cccc000000c000000cc00cc00ccc00000cc0000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
-00000000cc000ccccc000ccc000000ccc000000c00cc00cccccccccc0000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
-00000000cc000cccc00000cc000c0ccccc0c000c00c0000ccc000ccc0000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
-00000000cc000ccccc000ccc000ccccccccc000c00cc00cccccccccc0000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
-00000000cc000cccccc0cccccccccccccccccccccccccccccc000ccc0000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
-00000000cccccccccccccccccccccccccccccccccccccccccccccccc0000000000000000cccccccc7ccccccc7c77c777ccccccc7000000000000000000000000
-00000000cccccccc00000000000000000000000000000000000000000000000000000000c77c7cccccc777c77ccccccccccccccc777c77c77cccccc700000000
-00000000ccc00ccc00000000000000000000000000000000000000000000000000000000ccccc7cccc7cccccccccccccccccccc7ccccccccccccccc700000000
-00000000cc0750cc00000000000000000000000000000000000000000000000000000000cccccc7cc7cccccc7cccccccccccccc7cccccccc7cccccc700000000
-00000000c077550c00000000000000000000000000000000000000000000000000000000ccccccc77ccccccc7ccccccccccccccccccccccc7cccccc700000000
-00000000c055000c00000000000000000000000000000000000000000000000000000000ccccccc7cccccccc7cccccccccccccc7cccccccccccccccc00000000
-00000000cc0500cc00000000000000000000000000000000000000000000000000000000ccccccc77cccccccc7cccccccccccc7ccccccccc7cccccc700000000
-00000000ccc00ccc00000000000000000000000000000000000000000000000000000000cccccccc7ccccccccc7cccccccccc7cccccccccc7cccccc700000000
-00000000cccccccc00000000000000000000000000000000000000000000000000000000ccccccc7ccccccccccc7c77c7c777ccc777c77777cccccc700000000
-000000000000000000000000000000000000000000000000000000000000000000000000ccccccc77c77cc777cccccc77c777c7cc77c77cc0000000000000000
-0000000000000000000000000000000000000000000000000000000000000000000000007c7c77cccccccccc7cccccccccccc7ccc7cccc7c0000000000000000
-000000000000000000000000000000000000000000000000000000000000000000000000c7ccccc7c7ccccccccccccc7cccccc7c7ccccccc0000000000000000
-0000000000000000000000000000000000000000000000000000000000000000000000007cccccc7c7ccccccccccccc7cccccccc7cccccc70000000000000000
-0000000000000000000000000000000000000000000000000000000000000000000000007ccccccccccccccc7cccccc7cccccc7c7cccccc70000000000000000
-0000000000000000000000000000000000000000000000000000000000000000000000007cccccccc7cccccc7ccccc7ccccccc7cccccccc70000000000000000
-000000000000000000000000000000000000000000000000000000000000000000000000ccccccc7cc7ccccccc77c7c7cccccccc77cccc7c0000000000000000
-0000000000000000000000000000000000000000000000000000000000000000000000007cccccc7c7c777c77ccccccc77cc77c7c77777cc0000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000cccccccc000000000000000000cc000c00000000000000000000000000000000777c77c77cccccccccccccccccccccc7000000000000000000000000
+00000000cc0000cc000000000000000ccc0c00cc00000000000000000000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
+00000000c057770c0000000000ccc000000ccccc00000000000000000000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
+00000000c057770c0000000c000000ccccccc0c000000000000000000000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
+00000000cc07770c0000000000ccccc00ccccccc00000000000000000000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
+00000000cc07770c000c00c0ccc0000ccccccccc00000000000000000000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
+00000000ccc000cc00cccc0c000c0cccc0cccccc00000000000000000000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
+00000000cccccccc0c0c0cccccccc000cccccccc00000000000000000000000000000000cccccccc7ccccccc7c77c777ccccccc7000000000000000000000000
+00000000cccccccc0c0ccccccccccccccccccccc00000000000000000000000000000000c77c7cccccc777c77ccccccccccccccc777c77c77cccccc700000000
+00000000ccc00ccccccc000cccc0ccccccc00ccc00000000000000000000000000000000ccccc7cccc7cccccccccccccccccccc7ccccccccccccccc700000000
+00000000cc0750cccc00cc0ccccccccc0c0ccccc00000000000000000000000000000000cccccc7cc7cccccc7cccccccccccccc7cccccccc7cccccc700000000
+00000000c077550cccccc0cccccc00ccccc0cccc00000000000000000000000000000000ccccccc77ccccccc7ccccccccccccccccccccccc7cccccc700000000
+00000000c055550ccccccccc0ccccccccccccccc00000000000000000000000000000000ccccccc7cccccccc7cccccccccccccc7cccccccccccccccc00000000
+00000000cc0550cccc0ccccccccccccccccccccc00000000000000000000000000000000ccccccc77cccccccc7cccccccccccc7ccccccccc7cccccc700000000
+00000000ccc00ccccccccccc0ccccccc0ccccccc00000000000000000000000000000000cccccccc7ccccccccc7cccccccccc7cccccccccc7cccccc700000000
+00000000ccccccccccccccc0cccccccccccccccc00000000000000000000000000000000ccccccc7ccccccccccc7c77c7c777ccc777c77777cccccc700000000
+0000000000000000ccc0cccccccccccccccccccc00000000000000000000000000000000ccccccc77c77cc777cccccc77c777c7cc77c77cc0000000000000000
+0000000000000000ccccccccc0cccccccccccccc000000000000000000000000000000007c7c77cccccccccc7cccccccccccc7ccc7cccc7c0000000000000000
+0000000000000000cccccccccccccccccccccccc00000000000000000000000000000000c7ccccc7c7ccccccccccccc7cccccc7c7ccccccc0000000000000000
+0000000000000000cccccccccccccccccccccccc000000000000000000000000000000007cccccc7c7ccccccccccccc7cccccccc7cccccc70000000000000000
+0000000000000000cccccccccccccc0ccccccccc000000000000000000000000000000007ccccccccccccccc7cccccc7cccccc7c7cccccc70000000000000000
+0000000000000000cc0ccccccccccccccccccccc000000000000000000000000000000007cccccccc7cccccc7ccccc7ccccccc7cccccccc70000000000000000
+0000000000000000cccccccccccccccccccccccc00000000000000000000000000000000ccccccc7cc7ccccccc77c7c7cccccccc77cccc7c0000000000000000
+0000000000000000cccccccccccccccccccccccc000000000000000000000000000000007cccccc7c7c777c77ccccccc77cc77c7c77777cc0000000000000000
+c7c77c77777c77777777c7c7777cc77c77cc777777777777777777c777777c77c77c77c77c777ccc000000000000000000000000000000000000000000000000
+7777777cc7c777c77c7c7777c7c7c777c7cc7777c77c77777777ccc7cc7c7c77c7777c7c777c7ccc000000000000000000000000000000000000000000000000
+7c777777777c7777cc7777c77777777c77777c77c77777cccc77cc77cc7c777c7c7777c7c7cc77cc000000000000000000000000000000000000000000000000
+77777c77c7777c7c777cc777c77777ccccccc7c777c7cc7c77cc77c7ccc77cc7777c7c7cc7cccccc000000000000000000000000000000000000000000000000
+7c7c7cc7cc77777c7c777cc7777777cccc7c7c7c777cccc77cccc7cccc7cc7cccc7c7c7c777777cc000000000000000000000000000000000000000000000000
+777777c77777cc777c777cc7777cc7c7c7cccccc7cc7cc7c77cc77c7c7cccc7777ccccccc7cccccc000000000000000000000000000000000000000000000000
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc000000000000000000000000000000000000000000000000
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc000000000000000000000000000000000000000000000000
+cc0cccccc000cccccccc0ccccc0cccccc0000ccccc0ccccc00000000000000000000000000000000000000000000000000000000000000000000000000000000
+c000ccccc000cccccc0000ccc0000ccc000000ccc000cccc00000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000cccc000ccccc000000c000000cc00cc00cc00000ccc00000000000000000000000000000000000000000000000000000000000000000000000000000000
+c000ccccc000cccc000000ccc000000c00cc00cccccccccc00000000000000000000000000000000000000000000000000000000000000000000000000000000
+c000cccc00000ccc000c0ccccc0c000c00cc00ccc000cccc00000000000000000000000000000000000000000000000000000000000000000000000000000000
+c000ccccc000cccc000ccccccccc000c00c0000ccccccccc00000000000000000000000000000000000000000000000000000000000000000000000000000000
+c000cccccc0ccccc000ccccccccc000c00cc00ccc000cccc00000000000000000000000000000000000000000000000000000000000000000000000000000000
+cccccccccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
