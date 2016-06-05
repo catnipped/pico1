@@ -16,6 +16,9 @@ objid = 1
 cardshuffle = false
 shuffletime = 0
 cardrow = 0
+timelinerow = 0
+turn = 1
+activate = false
 
 
 fntspr=64
@@ -170,6 +173,18 @@ function spawn(type,sprite,chance)
 	end
 end
 
+function initiatedeck()
+	deck = {}
+	add(deck, cards[1])
+	add(deck, cards[1])
+	add(deck, cards[1])
+	add(deck, cards[2])
+	add(deck, cards[3])
+	add(deck, cards[4])
+	add(deck, cards[5])
+	add(deck, cards[6])
+end
+
 function _init()
 	initfont()
 	for x=1,mapx-1 do
@@ -221,87 +236,48 @@ function _init()
 			clr = 5,
 			spr = 80
 		},
-		{ txt = {"for","ward"},
-			action = forward,
-			clr = 5,
-			spr = 80
-		},
-		{ txt = {"for","ward"},
-			action = forward,
-			clr = 5,
-			spr = 80
-		},
-		{ txt = {"for","ward"},
-			action = forward,
-			clr = 5,
-			spr = 80
-		},
-		{ txt = {"back","ward"},
+		{ txt = {"rev-","erse"},
 			action = backward,
 			clr = 5,
 			spr = 81
 		},
-		{ txt = {"back","ward"},
-			action = backward,
-			clr = 5,
-			spr = 81
-		},
-		{
-			txt = {"turn","left"},
+		{ txt = {"turn","left"},
 			action = turnl,
 			clr = 5,
 			spr = 83
 		},
-		{
-			txt = {"turn","left"},
-			action = turnl,
-			clr = 5,
-			spr = 83
-		},
-		{
-			txt = {"turn","rght"},
+		{	txt = {"turn","rght"},
 			action = turnr,
 			clr = 5,
 			spr = 82
 		},
-		{
-			txt = {"turn","rght"},
-			action = turnr,
-			clr = 5,
-			spr = 82
-		},
-		{
-			txt = {"u-","turn"},
+		{	txt = {"u-","turn"},
 			action = uturn,
 			clr = 5,
 			spr = 84
 		},
-		{
-			txt = {"fast","frwd"},
+		{	txt = {"fast","frwd"},
 			action = fast,
 			clr = 5,
 			spr = 85
 		},
-		{
-			txt = {"fast","frwd"},
-			action = fast,
-			clr = 5,
-			spr = 85
-		}
+
 	}
+
+	initiatedeck()
 
 	card = {}
 	for a = 0,3 do
-		local x = flr(rnd(count(cards)))+1
+		local x = flr(rnd(count(deck)))+1
 		card[a] = {}
-		card[a].action = cards[x].action
+		card[a].action = deck[x].action
 		card[a].rot = -0.3
 		card[a].dir = 0
 		card[a].x = 0
 		card[a].y = 0
-		card[a].txt = {cards[x].txt[1],cards[x].txt[2]}
-		card[a].clr = cards[x].clr
-		card[a].spr = cards[x].spr
+		card[a].txt = {deck[x].txt[1],deck[x].txt[2]}
+		card[a].clr = deck[x].clr
+		card[a].spr = deck[x].spr
 	end
 
 end
@@ -309,11 +285,11 @@ end
 function resetcards()
 
 	for a = 0,3 do
-		local x = flr(rnd(count(cards)))+1
-		card[a].action = cards[x].action
-		card[a].txt = {cards[x].txt[1],cards[x].txt[2]}
-		card[a].clr = cards[x].clr
-		card[a].spr = cards[x].spr
+		local x = flr(rnd(count(deck)))+1
+		card[a].action = deck[x].action
+		card[a].txt = {deck[x].txt[1],deck[x].txt[2]}
+		card[a].clr = deck[x].clr
+		card[a].spr = deck[x].spr
 	end
 
 end
@@ -328,6 +304,8 @@ function activator()
 	if timeline_counter > count(timeline) then
 		 for m = 1,2 do p[m].load = 0 end
 		 resetcards()
+		 activate = false
+		 turn += 1
 		 cardshuffle = false
 		 for a = 0,3 do card[a].rot = -0.3 end
 		return
@@ -335,6 +313,7 @@ function activator()
 		x = timeline_actor[timeline_counter]
 
 		timeline[timeline_counter](x)
+		p[timeline_actor[timeline_counter]].load -= 1
 		timeline_counter += 1
 		timeuntilturn = 0
 	else
@@ -392,9 +371,12 @@ function _update()
 				end
 			end
 
-			if p[m].load > 3 then --change to p[1].load and p[2].load
+			if activate == true then
 				cardshuffle = true
 				activator()
+			end
+			if p[m].load > 3 then --change to p[1].load and p[2].load
+				activate = true
 			end
 		end
 
@@ -487,6 +469,12 @@ function _draw()
 		for m = 1,2 do
 			pal(5,p[m].clr)
 			spr(1,p[m].x,p[m].y) --body
+			for l = 0 , p[m].load do
+				if l == 1 then pset(p[m].x+3,p[m].y+3,7) end
+				if l == 2 then pset(p[m].x+4,p[m].y+3,7) end
+				if l == 3 then pset(p[m].x+3,p[m].y+4,7) end
+				if l == 4 then pset(p[m].x+4,p[m].y+4,7) end
+			end
 			--drill
 			if p[m].dir == 0 then spr(2,p[m].x,p[m].y-6)
 			elseif p[m].dir == 2 then spr(2,p[m].x,p[m].y+6,1,1,false,true)
@@ -526,7 +514,23 @@ function _draw()
 	elseif cardshuffle == true then
 		cardrow = lerp(cardrow,80,0.3)
 	end
+	circ(cam[2].x+64,cam[2].y+209,cardrow,0)
+	circ(cam[2].x+64,cam[2].y+211,cardrow,0)
 	circ(cam[2].x+64,cam[2].y+210,cardrow,7)
+
+	if activate == true then
+		timelinerow = lerp(timelinerow,30,0.15)
+	elseif activate == false then
+		timelinerow = lerp(timelinerow,0,0.3)
+	end
+	circ(cam[2].x+64,cam[2].y-17,timelinerow,0)
+	circ(cam[2].x+64,cam[2].y-19,timelinerow,0)
+	circ(cam[2].x+64,cam[2].y-18,timelinerow,7)
+	local timeh = cam[2].y+timelinerow-23
+	rect(cam[2].x+55,timeh-1,cam[2].x+73,timeh+11,0)
+	rectfill(cam[2].x+56,timeh,cam[2].x+72,timeh+10,7)
+	print3("turn",cam[2].x+57,timeh+1,5)
+	print(turn,cam[2].x+63,timeh+5,0)
 
 	for a = 0,3 do --cards
 		local offset = 100
@@ -557,8 +561,8 @@ __gfx__
 00000000ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc7c7cc755575550000000000000000000000000000000000000000
 00000000c000000ccccccccc0000ccccccc55cccccc55cccccc00cccccc55ccccccccccccc77cccc555557570000000000000000000000000000000000000000
 00700700c055550ccc0000cc757000ccccc55cccccc55cccccc00cccccc55ccccccccccccccccc77557555750000000000000000000000000000000000000000
-00077000c050750ccc0750cc757570ccc005555cc555500cc555555cc555555ccccccccc7cc7c7cc575755550000000000000000000000000000000000000000
-00077000c057050cc005000c505050ccc005555cc555500cc555555cc555555ccccccccc7ccccccc755575550000000000000000000000000000000000000000
+00077000c050050ccc0750cc757570ccc005555cc555500cc555555cc555555ccccccccc7cc7c7cc575755550000000000000000000000000000000000000000
+00077000c050050cc005000c505050ccc005555cc555500cc555555cc555555ccccccccc7ccccccc755575550000000000000000000000000000000000000000
 00700700c055550cc077550c505000ccccc55cccccc55cccccc55cccccc00ccccccccccccc77cccc555557570000000000000000000000000000000000000000
 00000000c000000cc055000c0000ccccccc55cccccc55cccccc55cccccc00cccccccccccc7cc7c77557555750000000000000000000000000000000000000000
 00000000ccccccccc077550ccccccccccccccccccccccccccccccccccccccccccccccccccccccc7c575755550000000000000000000000000000000000000000
