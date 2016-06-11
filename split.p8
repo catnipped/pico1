@@ -95,6 +95,26 @@ function drill(m)
 	end
 end
 
+function push(a,b)
+  local ax = p[a].x / 8
+	local ay = p[a].y / 8
+  local bx = p[b].x / 8
+  local by = p[b].y / 8
+	local pushed = false
+  if bx == ax and by == ay then
+  	if p[a].dir == 0 and mget(ax,ay-1) ~= 9 then p[b].y -= 8 pushed = true end
+  	if p[a].dir == 2 and mget(ax,ay+1) ~= 9 then p[b].y += 8 pushed = true end
+  	if p[a].dir == 1 and mget(ax+1,ay) ~= 9 then p[b].x += 8 pushed = true end
+  	if p[a].dir == 3 and mget(ax-1,ay) ~= 9 then p[b].x -= 8 pushed = true end
+  else pushed = false end
+	if pushed == false then
+    if p[a].dir == 0 and mget(ax,ay-1) == 9 then p[a].y += 8 end
+  	if p[a].dir == 2 and mget(ax,ay+1) == 9 then p[a].y -= 8 end
+  	if p[a].dir == 1 and mget(ax+1,ay) == 9 then p[a].x -= 8 end
+  	if p[a].dir == 3 and mget(ax-1,ay) == 9 then p[a].x += 8 end
+	end
+end
+
 forward = function (m)
 	if drill(m) == false then
 		add(p[m].past,{x = p[m].x,y = p[m].y})
@@ -104,6 +124,8 @@ forward = function (m)
 		elseif  p[m].dir == 3 then p[m].x -= 8
 		end
 		pickup()
+    if m == 1 then push(1,2)
+    elseif m == 2 then push(2,1) end
 	end
 
 end
@@ -454,6 +476,7 @@ function score(n)
     p[n].inv = {}
     p[n].invworth = 0
   end
+  if p[n].score < 0 then p[n].score = 0 end
 end
 
 function _update()
@@ -751,7 +774,6 @@ function _draw()
 			print3(card[a].txt[1],x+9,y+1,card[a].clr)
 			print3(card[a].txt[2],x+9,y+5,card[a].clr)
 			spr(3+a+1,x,y)
-      print(card[a].id,x+21,y+11,5)
 		else
 			rectfill(x+7,y-1,x+9+w,y+h+1,0)
 			rectfill(x-1,y-1,x+8,y+8,0)
@@ -761,13 +783,12 @@ function _draw()
 			print3(card[a].txt[1],x+9,y+1,7)
 			print3(card[a].txt[2],x+9,y+5,7)
 			spr(3+a+1,x,y)
-      print(card[a].id,x+21,y+11,7)
 		end
 	end
 
 
 	rectfill(cam[2].x+18,cam[2].y+18,cam[2].x+42,cam[2].y+24,5)
-	print(#deck,cam[2].x+19,cam[2].y+19,7)
+	print(stat(1),cam[2].x+19,cam[2].y+19,7)
 end
 
 
