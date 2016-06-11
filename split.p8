@@ -165,6 +165,8 @@ fast = function (m)
 		elseif  p[m].dir == 3 then p[m].x -= 8
 		end
 		pickup()
+    if m == 1 then push(1,2)
+    elseif m == 2 then push(2,1) end
 	end
 
 	if drill(m) == false then
@@ -175,6 +177,8 @@ fast = function (m)
 		elseif  p[m].dir == 3 then p[m].x -= 8
 		end
 		pickup()
+    if m == 1 then push(1,2)
+    elseif m == 2 then push(2,1) end
 	end
 end
 
@@ -187,6 +191,8 @@ triple = function (m)
 		elseif  p[m].dir == 3 then p[m].x -= 8
 		end
 		pickup()
+    if m == 1 then push(1,2)
+    elseif m == 2 then push(2,1) end
 	end
 
 	if drill(m) == false then
@@ -197,6 +203,8 @@ triple = function (m)
 		elseif  p[m].dir == 3 then p[m].x -= 8
 		end
 		pickup()
+    if m == 1 then push(1,2)
+    elseif m == 2 then push(2,1) end
 	end
 
 	if drill(m) == false then
@@ -207,6 +215,8 @@ triple = function (m)
 		elseif  p[m].dir == 3 then p[m].x -= 8
 		end
 		pickup()
+    if m == 1 then push(1,2)
+    elseif m == 2 then push(2,1) end
 	end
 end
 
