@@ -3,7 +3,7 @@ version 7
 __lua__
 p = {}
 mapx = 16
-mapy = 24
+mapy = 20
 timeline = {}
 timeline_actor = {}
 timeline_counter = 1
@@ -25,6 +25,48 @@ gemtypes[2] = {nr = 3, clr = 14}
 gemtypes[3] = {nr = 5, clr = 10}
 wait = 0
 
+cards = {
+  { txt = {"for","ward"},
+    action = forward,
+    clr = 5,
+    spr = 80
+  },
+  { txt = {"rev-","erse"},
+    action = backward,
+    clr = 5,
+    spr = 81
+  },
+  { txt = {"turn","left"},
+    action = turnl,
+    clr = 5,
+    spr = 83
+  },
+  {	txt = {"turn","rght"},
+    action = turnr,
+    clr = 5,
+    spr = 82
+  },
+  {	txt = {"u-","turn"},
+    action = uturn,
+    clr = 5,
+    spr = 84
+  },
+  {	txt = {"fast","frwd"},
+    action = fast,
+    clr = 5,
+    spr = 85
+  },
+  {	txt = {"trpl","frwd"},
+    action = triple,
+    clr = 5,
+    spr = 87
+  },
+  {	txt = {"tele","dig"},
+    action = tele,
+    clr = 5,
+    spr = 86
+  }
+}
 
 fntspr=64
 fntdefaultcol=0
@@ -76,6 +118,22 @@ function every(a,b) -- a: number of frames true b: 1-30 where 1 is every frame, 
   return frames % b < a
 end
 
+function rotlerp(a, b, t)
+   while a < 0 do
+      a = a + 1
+   end
+   while b < 0 do
+      b = b + 1
+   end
+   diff = b - a
+   if diff > 0.5 then
+      b -= 1
+   elseif diff < -0.5 then
+      b += 1
+   end
+   return a + t * (b - a)
+end
+
 function drill(m)
 	local x = p[m].x / 8
 	local y = p[m].y / 8
@@ -106,8 +164,8 @@ function push(a,b)
   	if p[a].dir == 2 and mget(ax,ay+1) ~= 9 then p[b].y += 8 pushed = true end
   	if p[a].dir == 1 and mget(ax+1,ay) ~= 9 then p[b].x += 8 pushed = true end
   	if p[a].dir == 3 and mget(ax-1,ay) ~= 9 then p[b].x -= 8 pushed = true end
-  else pushed = false end
-	if pushed == false then
+  end
+	if bx == ax and by == ay and pushed == false then
     if p[a].dir == 0 and mget(ax,ay-1) == 9 then p[a].y += 8 end
   	if p[a].dir == 2 and mget(ax,ay+1) == 9 then p[a].y -= 8 end
   	if p[a].dir == 1 and mget(ax+1,ay) == 9 then p[a].x -= 8 end
@@ -132,11 +190,23 @@ end
 
 backward = function (m)
 	add(p[m].past,{x = p[m].x,y = p[m].y})
-	if 			p[m].dir == 0 then p[m].y += 8
-	elseif  p[m].dir == 1 then p[m].x -= 8
-	elseif  p[m].dir == 2 then p[m].y -= 8
-	elseif  p[m].dir == 3 then p[m].x += 8
+  local x = p[m].x / 8
+  local y = p[m].y / 8
+	if 			p[m].dir == 0 and mget(x,y+1) ~= 9 then p[m].y += 8
+	elseif  p[m].dir == 1 and mget(x-1,y) ~= 9 then p[m].x -= 8
+	elseif  p[m].dir == 2 and mget(x,y-1) ~= 9 then p[m].y -= 8
+	elseif  p[m].dir == 3 and mget(x+1,y) ~= 9 then p[m].x += 8
 	end
+  pickup()
+  local dir = p[m].dir
+  if 			dir == 0 then p[m].dir = 2
+	elseif  dir == 1 then p[m].dir = 3
+	elseif  dir == 2 then p[m].dir = 0
+	elseif  dir == 3 then p[m].dir = 1
+  end
+  if m == 1 then push(1,2)
+  elseif m == 2 then push(2,1) end
+  p[m].dir = dir
 end
 
 turnr = function (m)
@@ -247,155 +317,19 @@ function lerp(a,b,t)
   return a + t*(b-a)
 end
 
-function spawn(type,sprite,chance)
-	for a=0,mapx do
-		for b=0,mapy do
-			if flr(rnd(chance))+1 > chance-1 and mget(a,b) == 9 then
-				type = {}
-        local z = gemtypes[flr(rnd(3)+1)]
-				type.x = a*8
-				type.y = b*8
-				type.spr = sprite
-				type.clr = z.clr
-				type.id = objid
-        type.worth = z.nr
-				add(objects,type)
-				objid += 1
-			end
-		end
-	end
-end
-
 function initiatedeck()
 	deck = {}
 	add(deck, cards[1])
 	add(deck, cards[1])
 	add(deck, cards[1])
+  add(deck, cards[1])
 	add(deck, cards[2])
 	add(deck, cards[3])
+  add(deck, cards[3])
+  add(deck, cards[4])
 	add(deck, cards[4])
 	add(deck, cards[5])
 	add(deck, cards[6])
-end
-
-function _init()
-	initfont()
-	for x=1,mapx-1 do
-    for y=1,mapy-1 do
-      mset(x,y,flr(rnd(2)+8))
-    end
-	end
-
-	for x = 0,mapx do
-		for y = mapy, mapy+2 do
-			mset(x,y,10)
-		end
-	end
-
-	spawn(gem,33,5)
-	spawn(crd,17,10)
-
-	p[1] = {}
-	p[1].x = 8*6
-	p[1].y = 8*mapy
-	p[1].dir = 0
-	p[1].load = 0
-	p[1].inv = {}
-	p[1].past = {}
-	p[1].clr = 12
-  p[1].score = 0
-  p[1].invworth = 0
-  p[1].cardinv = {}
-  p[1].shuffle = false
-
-	p[2] = {}
-	p[2].x = 8*10
-	p[2].y = 8*mapy
-	p[2].dir = 0
-	p[2].load = 0
-	p[2].inv = {}
-	p[2].past = {}
-	p[2].clr = 11
-  p[2].score = 0
-  p[2].invworth = 0
-  p[2].cardinv = {}
-  p[2].shuffle = false
-
-	cam[1] = {}
-	cam[1].x = p[1].x-28
-	cam[1].y = p[1].y-64
-	cam[2] = {}
-	cam[2].x = p[2].x-92
-	cam[2].y = p[2].y-64
-
-	palt(12,true)
-	palt(0,false)
-
-	cards = {
-		{ txt = {"for","ward"},
-			action = forward,
-			clr = 5,
-			spr = 80
-		},
-		{ txt = {"rev-","erse"},
-			action = backward,
-			clr = 5,
-			spr = 81
-		},
-		{ txt = {"turn","left"},
-			action = turnl,
-			clr = 5,
-			spr = 83
-		},
-		{	txt = {"turn","rght"},
-			action = turnr,
-			clr = 5,
-			spr = 82
-		},
-		{	txt = {"u-","turn"},
-			action = uturn,
-			clr = 5,
-			spr = 84
-		},
-		{	txt = {"fast","frwd"},
-			action = fast,
-			clr = 5,
-			spr = 85
-		},
-		{	txt = {"trpl","frwd"},
-			action = triple,
-			clr = 5,
-			spr = 87
-		},
-		{	txt = {"tele","dig"},
-			action = tele,
-			clr = 5,
-			spr = 86
-		}
-	}
-
-	initiatedeck()
-
-  card = {}
-  local a = 0
-  local cardid = 1
-  for a = 0,3 do
-    local x = flr(rnd(#deck))+1
-    card[a] = {}
-		card[a].action = deck[x].action
-		card[a].rot = -0.3
-		card[a].dir = 0
-		card[a].x = 0
-		card[a].y = 0
-		card[a].txt = {deck[x].txt[1],deck[x].txt[2]}
-		card[a].clr = deck[x].clr
-		card[a].spr = deck[x].spr
-    card[a].id = cardid
-    cardid += 1
-    a += 1
-  end
-
-  dynamic_rock()
 end
 
 function resetcards()
@@ -434,6 +368,8 @@ function activator()
 		 cardshuffle = false
      p[1].cardinv = {}
      p[2].cardinv = {}
+     p[1].shuffle = false
+     p[2].shuffle = false
 		 for a = 0,3 do card[a].rot = -0.3 end
 		return
 	elseif timeuntilturn == 30 then
@@ -489,6 +425,313 @@ function score(n)
   if p[n].score < 0 then p[n].score = 0 end
 end
 
+function dynamic_rock()
+	for x = 0,mapx do
+		for y = 0,mapy do
+			if mget(x,y) ~= 9 then
+				local z = 0
+				local dir = {}
+				if mget(x-1,y) == 9 then z += 1 dir.west = true else dir.west = false end
+				if mget(x+1,y) == 9 then z += 1 dir.east = true else dir.east = false end
+				if mget(x,y-1) == 9 then z += 1 dir.north = true else dir.north = false end
+				if mget(x,y+1) == 9 then z += 1 dir.south = true else dir.south = false end
+				if z == 4 then mset(x,y,61) end
+				if z == 3 then
+					if dir.west == false then mset(x,y,60) end
+					if dir.east == false then mset(x,y,58) end
+					if dir.north == false then mset(x,y,59) end
+					if dir.south == false then mset(x,y,57) end
+				end
+
+				if z == 2 then
+					if dir.west == true and dir.north == true then mset(x,y,42) end
+					if dir.east == true and dir.north == true then mset(x,y,41) end
+					if dir.west == true and dir.south == true then mset(x,y,43) end
+					if dir.east == true and dir.south == true then mset(x,y,44) end
+					if dir.north == true and dir.south == true then mset(x,y,45) end
+					if dir.west == true and dir.east == true then mset(x,y,46) end
+				end
+
+				if z == 1 then
+					if dir.west == true then mset(x,y,26) end
+					if dir.east == true then mset(x,y,28) end
+					if dir.north == true then mset(x,y,25) end
+					if dir.south == true then mset(x,y,27) end
+				end
+
+				if z == 0 then mset(x,y,8) end
+			end
+		end
+	end
+end
+
+function ui()
+  --ui bar
+  line(cam[2].x+63,cam[2].y,cam[2].x+63,cam[2].y+127,p[1].clr)
+	line(cam[2].x+64,cam[2].y,cam[2].x+64,cam[2].y+127,p[2].clr)
+	rectfill(cam[2].x,cam[2].y,cam[2].x+128,cam[2].y+6,0)
+	line(cam[2].x,cam[2].y+7,cam[2].x+63,cam[2].y+7,p[1].clr)
+	line(cam[2].x+64,cam[2].y+7,cam[2].x+128,cam[2].y+7,p[2].clr)
+
+  --vignette
+  spr(18,cam[2].x,cam[2].y+8,3,3)
+	spr(18,cam[2].x+39,cam[2].y+8,3,3,true,false)
+	spr(18,cam[2].x,cam[2].y+104,3,3,false,true)
+	spr(18,cam[2].x+39,cam[2].y+104,3,3,true,true)
+
+	spr(18,cam[2].x+65,cam[2].y+8,3,3)
+	spr(18,cam[2].x+104,cam[2].y+8,3,3,true,false)
+	spr(18,cam[2].x+65,cam[2].y+104,3,3,false,true)
+	spr(18,cam[2].x+104,cam[2].y+104,3,3,true,true)
+
+  --ready to shuffle
+  if p[1].shuffle and every(10,20) then print3("shuffle please", cam[2].x+7,cam[2].y+125,p[1].clr) end
+  if p[2].shuffle and every(10,20) then print3("shuffle please", cam[2].x+66,cam[2].y+125,p[2].clr) end
+
+  --score
+  pal(5,p[1].clr)
+  spr(32,cam[2].x+22,cam[2].y)
+  pal(5,5)
+  if p[1].score < 10 then
+    print("0" .. p[1].score,cam[2].x+29,cam[2].y+1,p[1].clr)
+  else
+    print(p[1].score,cam[2].x+29,cam[2].y+1,p[1].clr)
+  end
+  if p[1].invworth > 0 then
+    print("+" .. p[1].invworth,cam[2].x+38,cam[2].y+1,5)
+  end
+
+  --turn wheel
+  local x = cam[2].x-1
+  local y = cam[2].y+1
+  local offset = 13 + p[1].loadspin * 2
+  circ(x-1,y,offset,0)
+  circ(x+1,y,offset,0)
+  circ(x,y,offset,7)
+  for a = 1,4 do
+    if p[1].load >= a then pal(7,p[1].clr) end
+    b = 0.09 * -a
+    spr(16,x-3+offset*sin(-0.09+b+(p[1].loadspin*0.09)),y-3+offset*cos(-0.09+b+(p[1].loadspin*0.09)))
+    pal(7,7)
+  end
+
+  --score
+  local l = cam[2].x+90
+  if p[2].invworth > 0 then
+    l -= 8
+    if p[2].invworth >= 10 then l-= 4 end
+    print("+" .. p[2].invworth,l+16,cam[2].y+1,5)
+  end
+  pal(5,p[2].clr)
+  spr(32,l,cam[2].y)
+  pal(5,5)
+
+  if p[2].score < 10 then
+    print("0" .. p[2].score,l+7,cam[2].y+1,p[2].clr)
+  else
+    print(p[2].score,l+7,cam[2].y+1,p[2].clr)
+  end
+
+  --turn wheel
+  local x = cam[2].x+128-1
+  local y = cam[2].y+1
+  local offset = 13 + p[2].loadspin * 2
+  circ(x-1,y,offset,0)
+  circ(x+1,y,offset,0)
+  circ(x,y,offset,7)
+  for a = 1,4 do
+    if p[2].load >= a then pal(7,p[2].clr) end
+    b = 0.09 * a
+    spr(16,x-3+offset*sin(0.09+b-(p[2].loadspin*0.09)),y-3+offset*cos(0.09+b-(p[2].loadspin*0.09)))
+    pal(7,7)
+  end
+
+  --card row
+	if cardshuffle == false then
+		cardrow = lerp(cardrow,110,0.15)
+	elseif cardshuffle == true then
+		cardrow = lerp(cardrow,80,0.3)
+	end
+	circ(cam[2].x+64,cam[2].y+209,cardrow,0)
+	circ(cam[2].x+64,cam[2].y+211,cardrow,0)
+	circ(cam[2].x+64,cam[2].y+210,cardrow,7)
+
+  --turn timer
+	if activate == true then
+		timelinerow = lerp(timelinerow,30,0.15)
+	elseif activate == false then
+		timelinerow = lerp(timelinerow,0,0.3)
+	end
+	circ(cam[2].x+64,cam[2].y-17,timelinerow,0)
+	circ(cam[2].x+64,cam[2].y-19,timelinerow,0)
+	circ(cam[2].x+64,cam[2].y-18,timelinerow,7)
+	local timeh = cam[2].y+timelinerow-23
+	rect(cam[2].x+55,timeh-1,cam[2].x+73,timeh+11,0)
+	rectfill(cam[2].x+56,timeh,cam[2].x+72,timeh+10,7)
+	print3("turn",cam[2].x+57,timeh+1,5)
+	print(turn,cam[2].x+57,timeh+5,0)
+
+	for a = 0,3 do --cards
+		local offset = 100
+		card[a].x = cam[2].x+51+(offset*sin(card[a].rot-0.373))
+		card[a].y = cam[2].y+195+(offset*cos(card[a].rot-0.373))
+		local x = card[a].x
+		local y = card[a].y
+		local h = 16
+		local w = 16
+		if card[a].clr == 5 then --if owned
+			rectfill(x+7,y-1,x+9+w,y+h+1,0)
+			rectfill(x-1,y-1,x+8,y+8,0)
+			rectfill(x+8,y,x+8+w,y+h,7)
+			rectfill(x,y,x+7,y+7,7)
+			spr(card[a].spr, x+9, y+9)
+			print3(card[a].txt[1],x+9,y+1,card[a].clr)
+			print3(card[a].txt[2],x+9,y+5,card[a].clr)
+			spr(3+a+1,x,y)
+		else
+			rectfill(x+7,y-1,x+9+w,y+h+1,0)
+			rectfill(x-1,y-1,x+8,y+8,0)
+			rectfill(x+8,y,x+8+w,y+h,card[a].clr)
+			rectfill(x,y,x+7,y+7,7)
+			spr(card[a].spr, x+9, y+9)
+			print3(card[a].txt[1],x+9,y+1,7)
+			print3(card[a].txt[2],x+9,y+5,7)
+			spr(3+a+1,x,y)
+		end
+	end
+end
+
+function spawn(type,sprite,rarity,x,y,c) --c has to be a nr between 1-100
+	for a=0,x do
+		for b=0,y do
+			if flr(rnd(100))+1 > c and mget(a,b) == 9 then
+        local isempty = true
+        for o in all(objects) do
+          if o.x == a*8 and o.y == b*8 then
+             isempty = false
+          end
+        end
+        if isempty then
+          type = {}
+          local z = gemtypes[flr(rnd(rarity)+1)]
+  				type.x = a*8
+  				type.y = b*8
+  				type.spr = sprite
+  				type.clr = z.clr
+  				type.id = objid
+          type.worth = z.nr
+  				add(objects,type)
+  				objid += 1
+        end
+			end
+		end
+	end
+end
+
+function generatemap()
+  for x=1,mapx-1 do
+    for y=1,mapy-1 do
+      mset(x,y,flr(rnd(2)+8))
+    end
+	end
+
+  for x=1,mapx-1 do
+    for y=1,mapy-11 do
+      if mget(x,y) ~= 9 then mset(x,y,flr(rnd(2)+8)) end
+    end
+  end
+
+  for x=1,mapx-1 do
+    for y=mapy-6,mapy-1 do
+      if mget(x,y) ~= 9 then mset(x,y,flr(rnd(2)+8)) end
+    end
+  end
+
+	for x = 0,mapx do
+		for y = mapy, mapy+2 do
+			mset(x,y,10)
+		end
+	end
+
+  spawn(gem,33,2,mapx,mapy-2,90)
+  spawn(gem,33,3,mapx,mapy-10,97)
+  spawn(gem,33,3,mapx,5,90)
+	spawn(crd,17,1,mapx,mapy-2,90)
+end
+
+function _init()
+	initfont()
+
+  generatemap()
+
+	p[1] = {}
+	p[1].x = 8*6
+	p[1].y = 8*(mapy+1)
+  p[1].dx = p[1].x
+  p[1].dy = p[1].y
+	p[1].dir = 0
+  p[1].rot = 0
+	p[1].load = 0
+	p[1].inv = {}
+	p[1].past = {}
+	p[1].clr = 12
+  p[1].score = 0
+  p[1].invworth = 0
+  p[1].cardinv = {}
+  p[1].shuffle = false
+  p[1].loadspin = 0
+
+	p[2] = {}
+	p[2].x = 8*10
+	p[2].y = 8*(mapy+1)
+  p[2].dx = p[2].x
+  p[2].dy = p[2].y
+	p[2].dir = 0
+  p[2].rot = 0
+	p[2].load = 0
+	p[2].inv = {}
+	p[2].past = {}
+	p[2].clr = 11
+  p[2].score = 0
+  p[2].invworth = 0
+  p[2].cardinv = {}
+  p[2].shuffle = false
+  p[2].loadspin = 0
+
+	cam[1] = {}
+	cam[1].x = p[1].x-28
+	cam[1].y = p[1].y-64
+	cam[2] = {}
+	cam[2].x = p[2].x-92
+	cam[2].y = p[2].y-64
+
+	palt(12,true)
+	palt(0,false)
+
+	initiatedeck()
+
+  card = {}
+  local a = 0
+  local cardid = 1
+  for a = 0,3 do
+    local x = flr(rnd(#deck))+1
+    card[a] = {}
+		card[a].action = deck[x].action
+		card[a].rot = -0.3
+		card[a].dir = 0
+		card[a].x = 0
+		card[a].y = 0
+		card[a].txt = {deck[x].txt[1],deck[x].txt[2]}
+		card[a].clr = deck[x].clr
+		card[a].spr = deck[x].spr
+    card[a].id = cardid
+    cardid += 1
+    a += 1
+  end
+
+  dynamic_rock()
+end
+
 function _update()
 	frames += 1
 	for m = 1,2 do
@@ -535,6 +778,12 @@ function _update()
 			end
 		end
     score(m)
+    p[m].loadspin = lerp(p[m].loadspin,p[m].load,0.4)
+    p[m].dx = lerp(p[m].dx,p[m].x,0.5)
+    p[m].dy = lerp(p[m].dy,p[m].y,0.5)
+    p[m].rot = rotlerp(p[m].rot,(p[m].dir+1)*0.25,0.4)
+    if p[m].dx - p[m].x < 2 then p[m].dx = p[m].x end
+    if p[m].dy - p[m].y < 2 then p[m].dy = p[m].y end
 	end
 
   if p[1].shuffle and p[2].shuffle then
@@ -573,50 +822,8 @@ function _update()
 	end
 end
 
-function dynamic_rock()
-	for x = 0,mapx do
-		for y = 0,mapy do
-			if mget(x,y) ~= 9 then
-				local z = 0
-				local dir = {}
-				if mget(x-1,y) == 9 then z += 1 dir.west = true else dir.west = false end
-				if mget(x+1,y) == 9 then z += 1 dir.east = true else dir.east = false end
-				if mget(x,y-1) == 9 then z += 1 dir.north = true else dir.north = false end
-				if mget(x,y+1) == 9 then z += 1 dir.south = true else dir.south = false end
-				if z == 4 then mset(x,y,61) end
-				if z == 3 then
-					if dir.west == false then mset(x,y,60) end
-					if dir.east == false then mset(x,y,58) end
-					if dir.north == false then mset(x,y,59) end
-					if dir.south == false then mset(x,y,57) end
-				end
-
-				if z == 2 then
-					if dir.west == true and dir.north == true then mset(x,y,42) end
-					if dir.east == true and dir.north == true then mset(x,y,41) end
-					if dir.west == true and dir.south == true then mset(x,y,43) end
-					if dir.east == true and dir.south == true then mset(x,y,44) end
-					if dir.north == true and dir.south == true then mset(x,y,45) end
-					if dir.west == true and dir.east == true then mset(x,y,46) end
-				end
-
-				if z == 1 then
-					if dir.west == true then mset(x,y,26) end
-					if dir.east == true then mset(x,y,28) end
-					if dir.north == true then mset(x,y,25) end
-					if dir.south == true then mset(x,y,27) end
-				end
-
-				if z == 0 then mset(x,y,8) end
-			end
-		end
-	end
-end
-
 function _draw()
 	cls()
-
-
 
 	for m = 1,2 do
     local color = 0
@@ -653,152 +860,59 @@ function _draw()
         else
     			pal(5,o.clr)
     			spr(o.spr,o.x,o.y)
+          -- if btn(5,0) and m == 2 then
+          --   print(o.worth, o.x+7,o.y+7,0)
+          --   print(o.worth, o.x+9,o.y+9,0)
+          --   print(o.worth, o.x+9,o.y+7,0)
+          --   print(o.worth, o.x+9,o.y+7,0)
+          --   print(o.worth, o.x+8,o.y+8,o.clr)
+          -- end
         end
         pal(5,5)
       end
 		end
-		for m = 1,2 do
+
+		for m = 1,2 do --driller
 			pal(5,p[m].clr)
-			spr(1,p[m].x,p[m].y) --body
-			for l = 0 , p[m].load do
-				if l == 1 then pset(p[m].x+3,p[m].y+3,7) end
-				if l == 2 then pset(p[m].x+4,p[m].y+3,7) end
-				if l == 3 then pset(p[m].x+3,p[m].y+4,7) end
-				if l == 4 then pset(p[m].x+4,p[m].y+4,7) end
-			end
-			--drill
-			if p[m].dir == 0 then spr(2,p[m].x,p[m].y-6)
-			elseif p[m].dir == 2 then spr(2,p[m].x,p[m].y+6,1,1,false,true)
-			elseif p[m].dir == 1 then spr(3,p[m].x+6,p[m].y)
-			elseif p[m].dir == 3 then spr(3,p[m].x-6,p[m].y,1,1,true)
+
+      --drill
+      local drill = 6
+      if every(2,4) then drill = 7 end
+      local rot = p[m].rot+0.25
+      if rot > 1 then rot -= 1 end
+      local xflip = false
+      local yflip = false
+      local sprite = 2
+
+      if rot <= 0.125 or rot > 0.875 then sprite = 2 xflip = false yflip = true
+      elseif rot > 0.125 and rot <= 0.375 then sprite = 3 xflip = true yflip = false
+      elseif rot > 0.375 and rot <= 0.625 then sprite = 2 xflip = false yflip = false
+      elseif rot > 0.625 and rot <= 0.875 then sprite = 3 xflip = false yflip = true
+      end
+
+      spr(sprite,p[m].dx+drill*sin(rot),p[m].dy+drill*cos(rot),1,1,xflip,yflip)
+
+
+			spr(1,p[m].dx,p[m].dy) --body
+
+			for l = 0 , p[m].load do --action light
+				if l == 1 then pset(p[m].dx+3,p[m].dy+3,7) end
+				if l == 2 then pset(p[m].dx+4,p[m].dy+3,7) end
+				if l == 3 then pset(p[m].dx+3,p[m].dy+4,7) end
+				if l == 4 then pset(p[m].dx+4,p[m].dy+4,7) end
 			end
 			pal(5,5)
 		end
-
-
 
 		camera(cam[m].x,cam[m].y)
 	end
 
 	clip()
-	--ui
 
+  ui()
 
-	line(cam[2].x+63,cam[2].y,cam[2].x+63,cam[2].y+127,p[1].clr)
-	line(cam[2].x+64,cam[2].y,cam[2].x+64,cam[2].y+127,p[2].clr)
-	rectfill(cam[2].x,cam[2].y,cam[2].x+128,cam[2].y+6,0)
-	line(cam[2].x,cam[2].y+7,cam[2].x+63,cam[2].y+7,p[1].clr)
-	line(cam[2].x+64,cam[2].y+7,cam[2].x+128,cam[2].y+7,p[2].clr)
-	spr(18,cam[2].x,cam[2].y+8,3,3)
-	spr(18,cam[2].x+39,cam[2].y+8,3,3,true,false)
-	spr(18,cam[2].x,cam[2].y+104,3,3,false,true)
-	spr(18,cam[2].x+39,cam[2].y+104,3,3,true,true)
-
-	spr(18,cam[2].x+65,cam[2].y+8,3,3)
-	spr(18,cam[2].x+104,cam[2].y+8,3,3,true,false)
-	spr(18,cam[2].x+65,cam[2].y+104,3,3,false,true)
-	spr(18,cam[2].x+104,cam[2].y+104,3,3,true,true)
-
-  if p[1].shuffle and every(10,20) then print3("shuffle please", cam[2].x+7,cam[2].y+125,p[1].clr) end
-  if p[2].shuffle and every(10,20) then print3("shuffle please", cam[2].x+66,cam[2].y+125,p[2].clr) end
-
-  for a = 1,4 do
-    if p[1].load >= a then pal(5,p[1].clr) end
-    b = (a-1)*5
-	  spr(16,cam[2].x+b,cam[2].y)
-    pal(5,5)
-  end
-  pal(5,p[1].clr)
-  spr(32,cam[2].x+22,cam[2].y)
-  pal(5,5)
-  if p[1].score < 10 then
-    print("0" .. p[1].score,cam[2].x+29,cam[2].y+1,p[1].clr)
-  else
-    print(p[1].score,cam[2].x+29,cam[2].y+1,p[1].clr)
-  end
-  if p[1].invworth > 0 then
-    print("+" .. p[1].invworth,cam[2].x+38,cam[2].y+1,5)
-  end
-
-
-  for a = 1,4 do
-    if p[2].load >= a then pal(5,p[2].clr) end
-    b = (a-1)*5
-	  spr(16,cam[2].x+120-b,cam[2].y)
-    pal(5,5)
-  end
-  local l = cam[2].x+90
-  if p[2].invworth > 0 then
-    l -= 8
-    if p[2].invworth >= 10 then l-= 4 end
-    print("+" .. p[2].invworth,l+16,cam[2].y+1,5)
-  end
-  pal(5,p[2].clr)
-  spr(32,l,cam[2].y)
-  pal(5,5)
-
-  if p[2].score < 10 then
-    print("0" .. p[2].score,l+7,cam[2].y+1,p[2].clr)
-  else
-    print(p[2].score,l+7,cam[2].y+1,p[2].clr)
-  end
-
-
-	if cardshuffle == false then
-		cardrow = lerp(cardrow,110,0.15)
-	elseif cardshuffle == true then
-		cardrow = lerp(cardrow,80,0.3)
-	end
-	circ(cam[2].x+64,cam[2].y+209,cardrow,0)
-	circ(cam[2].x+64,cam[2].y+211,cardrow,0)
-	circ(cam[2].x+64,cam[2].y+210,cardrow,7)
-
-	if activate == true then
-		timelinerow = lerp(timelinerow,30,0.15)
-	elseif activate == false then
-		timelinerow = lerp(timelinerow,0,0.3)
-	end
-	circ(cam[2].x+64,cam[2].y-17,timelinerow,0)
-	circ(cam[2].x+64,cam[2].y-19,timelinerow,0)
-	circ(cam[2].x+64,cam[2].y-18,timelinerow,7)
-	local timeh = cam[2].y+timelinerow-23
-	rect(cam[2].x+55,timeh-1,cam[2].x+73,timeh+11,0)
-	rectfill(cam[2].x+56,timeh,cam[2].x+72,timeh+10,7)
-	print3("turn",cam[2].x+57,timeh+1,5)
-	print(turn,cam[2].x+57,timeh+5,0)
-
-	for a = 0,3 do --cards
-		local offset = 100
-		card[a].x = cam[2].x+51+(offset*sin(card[a].rot-0.373))
-		card[a].y = cam[2].y+195+(offset*cos(card[a].rot-0.373))
-		local x = card[a].x
-		local y = card[a].y
-		local h = 16
-		local w = 16
-		if card[a].clr == 5 then
-			rectfill(x+7,y-1,x+9+w,y+h+1,0)
-			rectfill(x-1,y-1,x+8,y+8,0)
-			rectfill(x+8,y,x+8+w,y+h,7)
-			rectfill(x,y,x+7,y+7,7)
-			spr(card[a].spr, x+9, y+9)
-			print3(card[a].txt[1],x+9,y+1,card[a].clr)
-			print3(card[a].txt[2],x+9,y+5,card[a].clr)
-			spr(3+a+1,x,y)
-		else
-			rectfill(x+7,y-1,x+9+w,y+h+1,0)
-			rectfill(x-1,y-1,x+8,y+8,0)
-			rectfill(x+8,y,x+8+w,y+h,card[a].clr)
-			rectfill(x,y,x+7,y+7,7)
-			spr(card[a].spr, x+9, y+9)
-			print3(card[a].txt[1],x+9,y+1,7)
-			print3(card[a].txt[2],x+9,y+5,7)
-			spr(3+a+1,x,y)
-		end
-	end
-
-
-	rectfill(cam[2].x+18,cam[2].y+18,cam[2].x+42,cam[2].y+24,5)
-	print(stat(1),cam[2].x+19,cam[2].y+19,7)
+	-- rectfill(cam[2].x+18,cam[2].y+18,cam[2].x+42,cam[2].y+24,5)
+	-- print(stat(1),cam[2].x+19,cam[2].y+19,7)
 end
 
 
@@ -812,12 +926,12 @@ __gfx__
 00000000c000000cc055000c0000ccccccc55cccccc55cccccc55cccccc00ccccccccccc0700707755755575cccccccc00000000000000000000000000000000
 00000000ccccccccc077550ccccccccccccccccccccccccccccccccccccccccccccccccc0000007057575555cccccccc00000000000000000000000000000000
 cccccccccccccccc000000000000000000cc000c00000000000000000000000000000000777c77c77cccccccccccccccccccccc7000000000000000000000000
-cc0000cccc0000cc000000000000000ccc0c00cc00000000000000000000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
-c007700cc075550c0000000000ccc000000ccccc00000000000000000000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
-c075570cc075550c0000000c000000ccccccc0c000000000000000000000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
-c075570ccc05550c0000000000ccccc00ccccccc00000000000000000000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
-c007700ccc05550c000c00c0ccc0000ccccccccc00000000000000000000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
-cc0000ccccc000cc00cccc0c000c0cccc0cccccc00000000000000000000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
+c000000ccc0000cc000000000000000ccc0c00cc00000000000000000000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
+c077770cc075550c0000000000ccc000000ccccc00000000000000000000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
+c077770cc075550c0000000c000000ccccccc0c000000000000000000000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
+c007770ccc05550c0000000000ccccc00ccccccc00000000000000000000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
+cc07770ccc05550c000c00c0ccc0000ccccccccc00000000000000000000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
+cc00000cccc000cc00cccc0c000c0cccc0cccccc00000000000000000000000000000000cccccccc7ccccccccccccccccccccccc000000000000000000000000
 cccccccccccccccc0c0c0cccccccc000cccccccc00000000000000000000000000000000cccccccc7ccccccc7c77c777ccccccc7000000000000000000000000
 cccccccccccccccc0c0ccccccccccccccccccccc00000000000000000000000000000000c77c7cccccc777c77ccccccccccccccc777c77c77cccccc700000000
 ccccccccccc00ccccccc000cccc0ccccccc00ccc00000000000000000000000000000000ccccc7cccc7cccccccccccccccccccc7ccccccccccccccc700000000
