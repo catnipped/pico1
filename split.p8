@@ -25,49 +25,6 @@ gemtypes[2] = {nr = 3, clr = 14}
 gemtypes[3] = {nr = 5, clr = 10}
 wait = 0
 
-cards = {
-  { txt = {"for","ward"},
-    action = forward,
-    clr = 5,
-    spr = 80
-  },
-  { txt = {"rev-","erse"},
-    action = backward,
-    clr = 5,
-    spr = 81
-  },
-  { txt = {"turn","left"},
-    action = turnl,
-    clr = 5,
-    spr = 83
-  },
-  {	txt = {"turn","rght"},
-    action = turnr,
-    clr = 5,
-    spr = 82
-  },
-  {	txt = {"u-","turn"},
-    action = uturn,
-    clr = 5,
-    spr = 84
-  },
-  {	txt = {"fast","frwd"},
-    action = fast,
-    clr = 5,
-    spr = 85
-  },
-  {	txt = {"trpl","frwd"},
-    action = triple,
-    clr = 5,
-    spr = 87
-  },
-  {	txt = {"tele","dig"},
-    action = tele,
-    clr = 5,
-    spr = 86
-  }
-}
-
 fntspr=64
 fntdefaultcol=0
 fntx={}
@@ -312,6 +269,49 @@ tele = function (m)
 	p[m].x = x * 8
 	p[m].y = y * 8
 end
+
+cards = {
+  { txt = {"for","ward"},
+    action = forward,
+    clr = 5,
+    spr = 80
+  },
+  { txt = {"rev-","erse"},
+    action = backward,
+    clr = 5,
+    spr = 81
+  },
+  { txt = {"turn","left"},
+    action = turnl,
+    clr = 5,
+    spr = 83
+  },
+  {	txt = {"turn","rght"},
+    action = turnr,
+    clr = 5,
+    spr = 82
+  },
+  {	txt = {"u-","turn"},
+    action = uturn,
+    clr = 5,
+    spr = 84
+  },
+  {	txt = {"fast","frwd"},
+    action = fast,
+    clr = 5,
+    spr = 85
+  },
+  {	txt = {"trpl","frwd"},
+    action = triple,
+    clr = 5,
+    spr = 87
+  },
+  {	txt = {"tele","dig"},
+    action = tele,
+    clr = 5,
+    spr = 86
+  }
+}
 
 function lerp(a,b,t)
   return a + t*(b-a)
