@@ -23,6 +23,8 @@
   - menu screen
   - game reset
 - other
+  - error if no actions picked
+  - error if already picked action
   - out of bounds fix
   - music?
   - new palette

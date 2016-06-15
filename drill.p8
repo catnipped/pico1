@@ -773,7 +773,7 @@ function _update()
 				cardshuffle = true
 				activator()
 			end
-			if to p[1].load > 3 and p[2].load > 3 then --change to p[1].load and p[2].load
+			if p[1].load > 3 and p[2].load > 3 then --change to p[1].load and p[2].load
 				activate = true
 			end
 		end
