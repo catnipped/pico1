@@ -20,10 +20,11 @@ timelinerow = 0
 turn = 1
 activate = false
 gemtypes = {}
-gemtypes[1] = {nr = 1, clr = 8}
-gemtypes[2] = {nr = 3, clr = 14}
+gemtypes[1] = {nr = 1, clr = 3}
+gemtypes[2] = {nr = 3, clr = 11}
 gemtypes[3] = {nr = 5, clr = 10}
 wait = 0
+game_screen = "menu"
 
 fntspr=64
 fntdefaultcol=0
@@ -129,195 +130,196 @@ function push(a,b)
   	if p[a].dir == 3 and mget(ax-1,ay) == 9 then p[a].x += 8 end
 	end
 end
+function init_actions()
+  forward = function (m)
+  	if drill(m) == false then
+  		add(p[m].past,{x = p[m].x,y = p[m].y})
+  		if 			p[m].dir == 0 then p[m].y -= 8
+  		elseif  p[m].dir == 1 then p[m].x += 8
+  		elseif  p[m].dir == 2 then p[m].y += 8
+  		elseif  p[m].dir == 3 then p[m].x -= 8
+  		end
+  		pickup()
+      if m == 1 then push(1,2)
+      elseif m == 2 then push(2,1) end
+  	end
 
-forward = function (m)
-	if drill(m) == false then
-		add(p[m].past,{x = p[m].x,y = p[m].y})
-		if 			p[m].dir == 0 then p[m].y -= 8
-		elseif  p[m].dir == 1 then p[m].x += 8
-		elseif  p[m].dir == 2 then p[m].y += 8
-		elseif  p[m].dir == 3 then p[m].x -= 8
-		end
-		pickup()
-    if m == 1 then push(1,2)
-    elseif m == 2 then push(2,1) end
-	end
-
-end
-
-backward = function (m)
-	add(p[m].past,{x = p[m].x,y = p[m].y})
-  local x = p[m].x / 8
-  local y = p[m].y / 8
-	if 			p[m].dir == 0 and mget(x,y+1) ~= 9 then p[m].y += 8
-	elseif  p[m].dir == 1 and mget(x-1,y) ~= 9 then p[m].x -= 8
-	elseif  p[m].dir == 2 and mget(x,y-1) ~= 9 then p[m].y -= 8
-	elseif  p[m].dir == 3 and mget(x+1,y) ~= 9 then p[m].x += 8
-	end
-  pickup()
-  local dir = p[m].dir
-  if 			dir == 0 then p[m].dir = 2
-	elseif  dir == 1 then p[m].dir = 3
-	elseif  dir == 2 then p[m].dir = 0
-	elseif  dir == 3 then p[m].dir = 1
   end
-  if m == 1 then push(1,2)
-  elseif m == 2 then push(2,1) end
-  p[m].dir = dir
-end
 
-turnr = function (m)
-	p[m].dir += 1
-	if p[m].dir > 3 then p[m].dir = 0 end
-end
-
-turnl = function (m)
-	p[m].dir -= 1
-	if p[m].dir < 0 then p[m].dir = 3 end
-end
-
-uturn = function (m)
-	p[m].dir += 1
-	if p[m].dir > 3 then p[m].dir = 0 end
-	p[m].dir += 1
-	if p[m].dir > 3 then p[m].dir = 0 end
-end
-
-fast = function (m)
-	if drill(m) == false then
-		add(p[m].past,{x = p[m].x,y = p[m].y})
-		if 			p[m].dir == 0 then p[m].y -= 8
-		elseif  p[m].dir == 1 then p[m].x += 8
-		elseif  p[m].dir == 2 then p[m].y += 8
-		elseif  p[m].dir == 3 then p[m].x -= 8
-		end
-		pickup()
+  backward = function (m)
+  	add(p[m].past,{x = p[m].x,y = p[m].y})
+    local x = p[m].x / 8
+    local y = p[m].y / 8
+  	if 			p[m].dir == 0 and mget(x,y+1) ~= 9 then p[m].y += 8
+  	elseif  p[m].dir == 1 and mget(x-1,y) ~= 9 then p[m].x -= 8
+  	elseif  p[m].dir == 2 and mget(x,y-1) ~= 9 then p[m].y -= 8
+  	elseif  p[m].dir == 3 and mget(x+1,y) ~= 9 then p[m].x += 8
+  	end
+    pickup()
+    local dir = p[m].dir
+    if 			dir == 0 then p[m].dir = 2
+  	elseif  dir == 1 then p[m].dir = 3
+  	elseif  dir == 2 then p[m].dir = 0
+  	elseif  dir == 3 then p[m].dir = 1
+    end
     if m == 1 then push(1,2)
     elseif m == 2 then push(2,1) end
-	end
+    p[m].dir = dir
+  end
 
-	if drill(m) == false then
-		add(p[m].past,{x = p[m].x,y = p[m].y})
-		if 			p[m].dir == 0 then p[m].y -= 8
-		elseif  p[m].dir == 1 then p[m].x += 8
-		elseif  p[m].dir == 2 then p[m].y += 8
-		elseif  p[m].dir == 3 then p[m].x -= 8
-		end
-		pickup()
-    if m == 1 then push(1,2)
-    elseif m == 2 then push(2,1) end
-	end
+  turnr = function (m)
+  	p[m].dir += 1
+  	if p[m].dir > 3 then p[m].dir = 0 end
+  end
+
+  turnl = function (m)
+  	p[m].dir -= 1
+  	if p[m].dir < 0 then p[m].dir = 3 end
+  end
+
+  uturn = function (m)
+  	p[m].dir += 1
+  	if p[m].dir > 3 then p[m].dir = 0 end
+  	p[m].dir += 1
+  	if p[m].dir > 3 then p[m].dir = 0 end
+  end
+
+  fast = function (m)
+  	if drill(m) == false then
+  		add(p[m].past,{x = p[m].x,y = p[m].y})
+  		if 			p[m].dir == 0 then p[m].y -= 8
+  		elseif  p[m].dir == 1 then p[m].x += 8
+  		elseif  p[m].dir == 2 then p[m].y += 8
+  		elseif  p[m].dir == 3 then p[m].x -= 8
+  		end
+  		pickup()
+      if m == 1 then push(1,2)
+      elseif m == 2 then push(2,1) end
+  	end
+
+  	if drill(m) == false then
+  		add(p[m].past,{x = p[m].x,y = p[m].y})
+  		if 			p[m].dir == 0 then p[m].y -= 8
+  		elseif  p[m].dir == 1 then p[m].x += 8
+  		elseif  p[m].dir == 2 then p[m].y += 8
+  		elseif  p[m].dir == 3 then p[m].x -= 8
+  		end
+  		pickup()
+      if m == 1 then push(1,2)
+      elseif m == 2 then push(2,1) end
+  	end
+  end
+
+  triple = function (m)
+  	if drill(m) == false then
+  		add(p[m].past,{x = p[m].x,y = p[m].y})
+  		if 			p[m].dir == 0 then p[m].y -= 8
+  		elseif  p[m].dir == 1 then p[m].x += 8
+  		elseif  p[m].dir == 2 then p[m].y += 8
+  		elseif  p[m].dir == 3 then p[m].x -= 8
+  		end
+  		pickup()
+      if m == 1 then push(1,2)
+      elseif m == 2 then push(2,1) end
+  	end
+
+  	if drill(m) == false then
+  		add(p[m].past,{x = p[m].x,y = p[m].y})
+  		if 			p[m].dir == 0 then p[m].y -= 8
+  		elseif  p[m].dir == 1 then p[m].x += 8
+  		elseif  p[m].dir == 2 then p[m].y += 8
+  		elseif  p[m].dir == 3 then p[m].x -= 8
+  		end
+  		pickup()
+      if m == 1 then push(1,2)
+      elseif m == 2 then push(2,1) end
+  	end
+
+  	if drill(m) == false then
+  		add(p[m].past,{x = p[m].x,y = p[m].y})
+  		if 			p[m].dir == 0 then p[m].y -= 8
+  		elseif  p[m].dir == 1 then p[m].x += 8
+  		elseif  p[m].dir == 2 then p[m].y += 8
+  		elseif  p[m].dir == 3 then p[m].x -= 8
+  		end
+  		pickup()
+      if m == 1 then push(1,2)
+      elseif m == 2 then push(2,1) end
+  	end
+  end
+
+  tele = function (m)
+  	local x = p[m].x / 8
+  	local y = p[m].y / 8
+  	if p[m].dir == 0 and mget(x,y-1) == 9 then
+  		y -= 8
+  		while mget(x,y) == 9 do y -= 8 end
+  	end
+  	if p[m].dir == 2 and mget(x,y+1) == 9 then
+  		y += 8
+  		while mget(x,y) == 9 do y += 8 end
+  	end
+  	if p[m].dir == 1 and mget(x+1,y) == 9 then
+  		x += 8
+  		while mget(x,y) == 9 do x += 8 end
+  	end
+  	if p[m].dir == 3 and mget(x-1,y) == 9 then
+  		x -= 8
+  		while mget(x,y) == 9 do x -= 8 end
+  	end
+  	p[m].x = x * 8
+  	p[m].y = y * 8
+  end
 end
-
-triple = function (m)
-	if drill(m) == false then
-		add(p[m].past,{x = p[m].x,y = p[m].y})
-		if 			p[m].dir == 0 then p[m].y -= 8
-		elseif  p[m].dir == 1 then p[m].x += 8
-		elseif  p[m].dir == 2 then p[m].y += 8
-		elseif  p[m].dir == 3 then p[m].x -= 8
-		end
-		pickup()
-    if m == 1 then push(1,2)
-    elseif m == 2 then push(2,1) end
-	end
-
-	if drill(m) == false then
-		add(p[m].past,{x = p[m].x,y = p[m].y})
-		if 			p[m].dir == 0 then p[m].y -= 8
-		elseif  p[m].dir == 1 then p[m].x += 8
-		elseif  p[m].dir == 2 then p[m].y += 8
-		elseif  p[m].dir == 3 then p[m].x -= 8
-		end
-		pickup()
-    if m == 1 then push(1,2)
-    elseif m == 2 then push(2,1) end
-	end
-
-	if drill(m) == false then
-		add(p[m].past,{x = p[m].x,y = p[m].y})
-		if 			p[m].dir == 0 then p[m].y -= 8
-		elseif  p[m].dir == 1 then p[m].x += 8
-		elseif  p[m].dir == 2 then p[m].y += 8
-		elseif  p[m].dir == 3 then p[m].x -= 8
-		end
-		pickup()
-    if m == 1 then push(1,2)
-    elseif m == 2 then push(2,1) end
-	end
-end
-
-tele = function (m)
-	local x = p[m].x / 8
-	local y = p[m].y / 8
-	if p[m].dir == 0 and mget(x,y-1) == 9 then
-		y -= 8
-		while mget(x,y) == 9 do y -= 8 end
-	end
-	if p[m].dir == 2 and mget(x,y+1) == 9 then
-		y += 8
-		while mget(x,y) == 9 do y += 8 end
-	end
-	if p[m].dir == 1 and mget(x+1,y) == 9 then
-		x += 8
-		while mget(x,y) == 9 do x += 8 end
-	end
-	if p[m].dir == 3 and mget(x-1,y) == 9 then
-		x -= 8
-		while mget(x,y) == 9 do x -= 8 end
-	end
-	p[m].x = x * 8
-	p[m].y = y * 8
-end
-
-cards = {
-  { txt = {"for","ward"},
-    action = forward,
-    clr = 5,
-    spr = 80
-  },
-  { txt = {"rev-","erse"},
-    action = backward,
-    clr = 5,
-    spr = 81
-  },
-  { txt = {"turn","left"},
-    action = turnl,
-    clr = 5,
-    spr = 83
-  },
-  {	txt = {"turn","rght"},
-    action = turnr,
-    clr = 5,
-    spr = 82
-  },
-  {	txt = {"u-","turn"},
-    action = uturn,
-    clr = 5,
-    spr = 84
-  },
-  {	txt = {"fast","frwd"},
-    action = fast,
-    clr = 5,
-    spr = 85
-  },
-  {	txt = {"trpl","frwd"},
-    action = triple,
-    clr = 5,
-    spr = 87
-  },
-  {	txt = {"tele","dig"},
-    action = tele,
-    clr = 5,
-    spr = 86
-  }
-}
 
 function lerp(a,b,t)
   return a + t*(b-a)
 end
 
 function initiatedeck()
+  cards = {
+    { txt = {"for","ward"},
+      action = forward,
+      clr = 5,
+      spr = 80
+    },
+    { txt = {"rev-","erse"},
+      action = backward,
+      clr = 5,
+      spr = 81
+    },
+    { txt = {"turn","left"},
+      action = turnl,
+      clr = 5,
+      spr = 83
+    },
+    {	txt = {"turn","rght"},
+      action = turnr,
+      clr = 5,
+      spr = 82
+    },
+    {	txt = {"u-","turn"},
+      action = uturn,
+      clr = 5,
+      spr = 84
+    },
+    {	txt = {"fast","frwd"},
+      action = fast,
+      clr = 5,
+      spr = 85
+    },
+    {	txt = {"trpl","frwd"},
+      action = triple,
+      clr = 5,
+      spr = 87
+    },
+    {	txt = {"tele","dig"},
+      action = tele,
+      clr = 5,
+      spr = 86
+    }
+  }
+  
 	deck = {}
 	add(deck, cards[1])
 	add(deck, cards[1])
@@ -365,6 +367,7 @@ function activator()
 		 resetcards()
 		 activate = false
 		 turn += 1
+     if p[1].win or p[2].win then game_screen = "win" return end
 		 cardshuffle = false
      p[1].cardinv = {}
      p[2].cardinv = {}
@@ -601,6 +604,149 @@ function ui()
 	end
 end
 
+function draw_menu()
+  local f = frames
+  local loop = 578
+  if frames > loop then f -= flr(frames / loop) * loop end
+
+  f = f / 2
+  pal(7,5)
+  map(0,0,-4,-168+f,mapx+1,mapy+1)
+  pal(7,7)
+  spr(18,0,0,3,3)
+  spr(18,64+39,0,3,3,true,false)
+  spr(18,0,104,3,3,false,true)
+  spr(18,64+39,104,3,3,true,true)
+  logo(32,50)
+end
+
+function draw_game()
+
+  	for m = 1,2 do
+      local color = 0
+  		if m == 2 then clip(0,0,64,128) color = p[1].clr end
+  		if m == 1 then clip(64,0,128,128) color = p[2].clr end
+  		rect(-1,-1,((mapx+1)*8),((mapy+3)*8),7)
+
+      if btn(5,0) and m == 2 then
+        for x = p[1].x-64,p[1].x+64,8 do
+          for y = p[1].y-64,p[1].y+64,8 do
+            if x > -1 and x < ((mapx+1)*8) and y > -1 and y < ((mapy+3)*8) then
+              spr(11,x,y)
+            end
+          end
+        end
+      elseif btn(5,1) and m == 1 then
+        for x = p[2].x-64,p[2].x+64,8 do
+          for y = p[2].y-64,p[2].y+64,8 do
+            if x > -1 and x < ((mapx+1)*8) and y > -1 and y < ((mapy+3)*8) then
+              spr(11,x,y)
+            end
+          end
+        end
+      end
+
+      map(0,0,0,0,mapx+1,mapy+1)
+  		map(0,mapy+1,0,(mapy+1)*8,mapx+1,mapy+8)
+
+  		for o in all(objects) do
+        if o.x ~= 0 then
+          if o.spr == 17 then
+            pal(5,color)
+            spr(o.spr,o.x,o.y)
+          else
+      			pal(5,o.clr)
+      			spr(o.spr,o.x,o.y)
+            -- if btn(5,0) and m == 2 then
+            --   print(o.worth, o.x+7,o.y+7,0)
+            --   print(o.worth, o.x+9,o.y+9,0)
+            --   print(o.worth, o.x+9,o.y+7,0)
+            --   print(o.worth, o.x+9,o.y+7,0)
+            --   print(o.worth, o.x+8,o.y+8,o.clr)
+            -- end
+          end
+          pal(5,5)
+        end
+  		end
+
+  		for m = 1,2 do --driller
+  			pal(5,p[m].clr)
+
+        --drill
+        local drill = 6
+        if every(2,4) then drill = 7 end
+        local rot = p[m].rot+0.25
+        if rot > 1 then rot -= 1 end
+        local xflip = false
+        local yflip = false
+        local sprite = 2
+
+        if rot <= 0.125 or rot > 0.875 then sprite = 2 xflip = false yflip = true
+        elseif rot > 0.125 and rot <= 0.375 then sprite = 3 xflip = true yflip = false
+        elseif rot > 0.375 and rot <= 0.625 then sprite = 2 xflip = false yflip = false
+        elseif rot > 0.625 and rot <= 0.875 then sprite = 3 xflip = false yflip = true
+        end
+
+        spr(sprite,p[m].dx+drill*sin(rot),p[m].dy+drill*cos(rot),1,1,xflip,yflip)
+
+
+  			spr(1,p[m].dx,p[m].dy) --body
+
+  			for l = 0 , p[m].load do --action light
+  				if l == 1 then pset(p[m].dx+3,p[m].dy+3,7) end
+  				if l == 2 then pset(p[m].dx+4,p[m].dy+3,7) end
+  				if l == 3 then pset(p[m].dx+3,p[m].dy+4,7) end
+  				if l == 4 then pset(p[m].dx+4,p[m].dy+4,7) end
+  			end
+  			pal(5,5)
+  		end
+
+  		camera(cam[m].x,cam[m].y)
+  	end
+
+  	clip()
+
+    ui()
+end
+
+function logo(x,y)
+  local d = 128
+  local r = 129
+  local i = 130
+  local l = 131
+  local e = 132
+  local t = 133
+  local h = 134
+  rectfill(x+1,y-3,x+33,y+1,0)
+  print3("codename",x+2,y-2,7)
+  x = x + 11
+  y = y + 11
+  if every(10,30) == false then
+    pal(7,13)
+    spr(t,x-8,y,1,2)
+    spr(h,x,y,1,2)
+    spr(r,x+8,y,1,2)
+    spr(i,x+8*2,y,1,2)
+    spr(l,x+8*3,y,1,2)
+    spr(l,x+8*4,y,1,2)
+    spr(e,x+8*5,y,1,2)
+    spr(r,x+8*6,y,1,2)
+  end
+  if every(10,20) == true then
+    y = y-8
+    x = x-10
+    pal(7,3)
+    spr(d,x,y,1,2)
+    spr(r,x+8,y,1,2)
+    spr(i,x+8*2,y,1,2)
+    spr(l,x+8*3,y,1,2)
+    spr(l,x+8*4,y,1,2)
+    spr(e,x+8*5,y,1,2)
+    spr(r,x+8*6,y,1,2)
+  end
+  pal(7,7)
+end
+
 function spawn(type,sprite,rarity,x,y,c) --c has to be a nr between 1-100
 	for a=0,x do
 		for b=0,y do
@@ -659,12 +805,11 @@ function generatemap()
 	spawn(crd,17,1,mapx,mapy-2,90)
 end
 
-function _init()
-	initfont()
-
+function init_game()
   generatemap()
 
 	p[1] = {}
+  p[1].win = false
 	p[1].x = 8*6
 	p[1].y = 8*(mapy+1)
   p[1].dx = p[1].x
@@ -674,7 +819,7 @@ function _init()
 	p[1].load = 0
 	p[1].inv = {}
 	p[1].past = {}
-	p[1].clr = 12
+	p[1].clr = 14
   p[1].score = 0
   p[1].invworth = 0
   p[1].cardinv = {}
@@ -682,6 +827,7 @@ function _init()
   p[1].loadspin = 0
 
 	p[2] = {}
+  p[2].win = false
 	p[2].x = 8*10
 	p[2].y = 8*(mapy+1)
   p[2].dx = p[2].x
@@ -691,7 +837,7 @@ function _init()
 	p[2].load = 0
 	p[2].inv = {}
 	p[2].past = {}
-	p[2].clr = 11
+	p[2].clr = 9
   p[2].score = 0
   p[2].invworth = 0
   p[2].cardinv = {}
@@ -732,9 +878,14 @@ function _init()
   dynamic_rock()
 end
 
-function _update()
-	frames += 1
-	for m = 1,2 do
+function _init()
+	initfont()
+  init_actions()
+  init_game()
+end
+
+function update_game()
+  for m = 1,2 do
 		if btn(5,m-1) then
 			if btn(0,m-1) then cam[m].x -= 5 end
 			if btn(1,m-1) then cam[m].x += 5 end
@@ -822,95 +973,43 @@ function _update()
 	end
 end
 
+function _update()
+	frames += 1
+  if frames == 31999 then frames = 0 end
+
+  if game_screen == "game" then
+	   update_game()
+  end
+
+  if game_screen == "menu" then
+    if btnp(4) or btnp(5) then
+      init_game()
+      game_screen = "game"
+    end
+  end
+
+  if game_screen == "win" then
+    if btnp(4) or btnp(5) then
+      game_screen = "menu"
+    end
+  end
+
+end
+
 function _draw()
 	cls()
-
-	for m = 1,2 do
-    local color = 0
-		if m == 2 then clip(0,0,64,128) color = p[1].clr end
-		if m == 1 then clip(64,0,128,128) color = p[2].clr end
-		rect(-1,-1,((mapx+1)*8),((mapy+3)*8),7)
-
-    if btn(5,0) and m == 2 then
-      for x = p[1].x-64,p[1].x+64,8 do
-        for y = p[1].y-64,p[1].y+64,8 do
-          if x > -1 and x < ((mapx+1)*8) and y > -1 and y < ((mapy+3)*8) then
-            spr(11,x,y)
-          end
-        end
-      end
-    elseif btn(5,1) and m == 1 then
-      for x = p[2].x-64,p[2].x+64,8 do
-        for y = p[2].y-64,p[2].y+64,8 do
-          if x > -1 and x < ((mapx+1)*8) and y > -1 and y < ((mapy+3)*8) then
-            spr(11,x,y)
-          end
-        end
-      end
+  if game_screen == "menu" then draw_menu() end
+  if game_screen == "game" then draw_game() end
+  if game_screen == "win" then
+    draw_game()
+    if p[1].win then
+      winner(cam[2].x,cam[2].y)
+      loser(cam[2].x+64,cam[2].y)
+    elseif p[2].win then
+      winner(cam[2].x+64,cam[2].y)
+      loser(cam[2].x,cam[2].y)
     end
-
-    map(0,0,0,0,mapx+1,mapy+1)
-		map(0,mapy+1,0,(mapy+1)*8,mapx+1,mapy+8)
-
-		for o in all(objects) do
-      if o.x ~= 0 then
-        if o.spr == 17 then
-          pal(5,color)
-          spr(o.spr,o.x,o.y)
-        else
-    			pal(5,o.clr)
-    			spr(o.spr,o.x,o.y)
-          -- if btn(5,0) and m == 2 then
-          --   print(o.worth, o.x+7,o.y+7,0)
-          --   print(o.worth, o.x+9,o.y+9,0)
-          --   print(o.worth, o.x+9,o.y+7,0)
-          --   print(o.worth, o.x+9,o.y+7,0)
-          --   print(o.worth, o.x+8,o.y+8,o.clr)
-          -- end
-        end
-        pal(5,5)
-      end
-		end
-
-		for m = 1,2 do --driller
-			pal(5,p[m].clr)
-
-      --drill
-      local drill = 6
-      if every(2,4) then drill = 7 end
-      local rot = p[m].rot+0.25
-      if rot > 1 then rot -= 1 end
-      local xflip = false
-      local yflip = false
-      local sprite = 2
-
-      if rot <= 0.125 or rot > 0.875 then sprite = 2 xflip = false yflip = true
-      elseif rot > 0.125 and rot <= 0.375 then sprite = 3 xflip = true yflip = false
-      elseif rot > 0.375 and rot <= 0.625 then sprite = 2 xflip = false yflip = false
-      elseif rot > 0.625 and rot <= 0.875 then sprite = 3 xflip = false yflip = true
-      end
-
-      spr(sprite,p[m].dx+drill*sin(rot),p[m].dy+drill*cos(rot),1,1,xflip,yflip)
-
-
-			spr(1,p[m].dx,p[m].dy) --body
-
-			for l = 0 , p[m].load do --action light
-				if l == 1 then pset(p[m].dx+3,p[m].dy+3,7) end
-				if l == 2 then pset(p[m].dx+4,p[m].dy+3,7) end
-				if l == 3 then pset(p[m].dx+3,p[m].dy+4,7) end
-				if l == 4 then pset(p[m].dx+4,p[m].dy+4,7) end
-			end
-			pal(5,5)
-		end
-
-		camera(cam[m].x,cam[m].y)
-	end
-
-	clip()
-
-  ui()
-
+  end
 	-- rectfill(cam[2].x+18,cam[2].y+18,cam[2].x+42,cam[2].y+24,5)
 	-- print(stat(1),cam[2].x+19,cam[2].y+19,7)
 end
@@ -981,22 +1080,22 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc0000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000ccc000000cc0000000c000ccccc0000000c0000000c000c000c000c000c000c000cc00000ccc00000cc0000000000000000000000000000000000000000
+077700cc0777700c0777770c070ccccc0777770c0777770c070c070c070c070c070c070c0077700c0077700c0000000000000000000000000000000000000000
+0700700c0700070c0007000c070ccccc0700000c0007000c070c070c0700070c070c070c0700070c0700070c0000000000000000000000000000000000000000
+070c070c070c070ccc070ccc070ccccc070ccccccc070ccc070c070c0770070c070c070c070c070c070c070c0000000000000000000000000000000000000000
+070c070c070c070ccc070ccc070ccccc070ccccccc070ccc070c070c0770070c070c070c070c070c070c000c0000000000000000000000000000000000000000
+070c070c070c070ccc070ccc070ccccc070ccccccc070ccc070c070c0770070c070c070c070c070c0070cccc0000000000000000000000000000000000000000
+070c070c070c070ccc070ccc070ccccc070ccccccc070ccc070c070c0707070c0700070c070c070cc070cccc0000000000000000000000000000000000000000
+070c070c0700070ccc070ccc070ccccc070000cccc070ccc0700070c0707070c0707070c070c070ccc070ccc0000000000000000000000000000000000000000
+070c070c0777700ccc070ccc070ccccc077770cccc070ccc0777770c0707070c0707070c070c070ccc070ccc0000000000000000000000000000000000000000
+070c070c0700070ccc070ccc070ccccc070000cccc070ccc0700070c0707070c0707070c070c070cccc070cc0000000000000000000000000000000000000000
+070c070c070c070ccc070ccc070ccccc070ccccccc070ccc070c070c0700770c0777770c070c070cccc0700c0000000000000000000000000000000000000000
+070c070c070c070ccc070ccc070ccccc070ccccccc070ccc070c070c0700770c0770770c070c070c000c070c0000000000000000000000000000000000000000
+070c070c070c070ccc070ccc070ccccc070ccccccc070ccc070c070c0700770c0770770c070c070c070c070c0000000000000000000000000000000000000000
+0700700c070c070c0007000c0700000c0700000ccc070ccc070c070c0700070c0700070c0700070c0700070c0000000000000000000000000000000000000000
+077700cc070c070c0777770c0077770c0077770ccc070ccc070c070c070c070c070c070c0077700c0077700c0000000000000000000000000000000000000000
+00000ccc000c000c0000000cc000000cc000000ccc000ccc000c000c000c000c000c000cc00000ccc00000cc0000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
