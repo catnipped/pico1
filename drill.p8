@@ -4,26 +4,14 @@ __lua__
 p = {}
 mapx = 16
 mapy = 20
-timeline = {}
-timeline_actor = {}
-timeline_counter = 1
-timeuntilturn = 0
+
 cam = {}
 camspeed = 0.2
 frames = 0
-objects = {}
-objid = 1
-cardshuffle = false
-shuffletime = 0
-cardrow = 0
-timelinerow = 0
-turn = 1
-activate = false
 gemtypes = {}
 gemtypes[1] = {nr = 1, clr = 3}
 gemtypes[2] = {nr = 3, clr = 11}
 gemtypes[3] = {nr = 5, clr = 10}
-wait = 0
 game_screen = "menu"
 
 fntspr=64
@@ -118,10 +106,10 @@ function push(a,b)
   local by = p[b].y / 8
 	local pushed = false
   if bx == ax and by == ay then
-  	if p[a].dir == 0 and mget(ax,ay-1) ~= 9 then p[b].y -= 8 pushed = true end
-  	if p[a].dir == 2 and mget(ax,ay+1) ~= 9 then p[b].y += 8 pushed = true end
-  	if p[a].dir == 1 and mget(ax+1,ay) ~= 9 then p[b].x += 8 pushed = true end
-  	if p[a].dir == 3 and mget(ax-1,ay) ~= 9 then p[b].x -= 8 pushed = true end
+  	if p[a].dir == 0 and mget(ax,ay-1) ~= 9 and by >= 0 then p[b].y -= 8 pushed = true end
+  	if p[a].dir == 2 and mget(ax,ay+1) ~= 9 and bx <= mapx then p[b].y += 8 pushed = true end
+  	if p[a].dir == 1 and mget(ax+1,ay) ~= 9 and bx >= 0 then p[b].x += 8 pushed = true end
+  	if p[a].dir == 3 and mget(ax-1,ay) ~= 9 and by <= mapy+2 then p[b].x -= 8 pushed = true end
   end
 	if bx == ax and by == ay and pushed == false then
     if p[a].dir == 0 and mget(ax,ay-1) == 9 then p[a].y += 8 end
@@ -370,7 +358,7 @@ function activator()
 		 turn += 1
 
      --winner?
-     if p[1].score >= 1 or p[2].score >= 1 or turn >= 10 then
+     if p[1].score >= 15 or p[2].score >= 15 or turn >= 15 then
        if p[1].score > p[2].score then p[1].win = true
        elseif p[1].score < p[2].score then p[2].win = true end
      end
@@ -391,6 +379,10 @@ function activator()
 		timeline_counter += 1
 		timeuntilturn = 0
     dynamic_rock()
+    for m = 1,2 do
+      p[m].x = mid(0,p[m].x,8*(mapx))
+      p[m].y = mid(0,p[m].y,8*(mapy+2))
+    end
 	else
 		timeuntilturn += 1
 	end
@@ -425,6 +417,7 @@ end
 
 function score(n)
   if p[n].y > 8*(mapy) then
+    if p[n].invworth < 0 then p[n].invworth = 0 end
     p[n].score += p[n].invworth
     for g in all(p[n].inv) do
       objects[g].x = 0
@@ -520,7 +513,10 @@ function ui()
   circ(x+1,y,offset,0)
   circ(x,y,offset,7)
   for a = 1,4 do
-    if p[1].load >= a then pal(7,p[1].clr) end
+    if p[1].load >= a then
+      pal(7,p[1].clr)
+      if card[a-1].clr == p[2].clr then pal(7,p[2].clr) end
+    end
     b = 0.09 * -a
     spr(16,x-3+offset*sin(-0.09+b+(p[1].loadspin*0.09)),y-3+offset*cos(-0.09+b+(p[1].loadspin*0.09)))
     pal(7,7)
@@ -551,7 +547,10 @@ function ui()
   circ(x+1,y,offset,0)
   circ(x,y,offset,7)
   for a = 1,4 do
-    if p[2].load >= a then pal(7,p[2].clr) end
+    if p[2].load >= a then
+      pal(7,p[2].clr)
+      if card[a-1].clr == p[1].clr then pal(7,p[2].clr) end
+    end
     b = 0.09 * a
     spr(16,x-3+offset*sin(0.09+b-(p[2].loadspin*0.09)),y-3+offset*cos(0.09+b-(p[2].loadspin*0.09)))
     pal(7,7)
@@ -580,7 +579,7 @@ function ui()
 	rect(cam[2].x+55,timeh-1,cam[2].x+73,timeh+11,0)
 	rectfill(cam[2].x+56,timeh,cam[2].x+72,timeh+10,7)
 	print3("turn",cam[2].x+57,timeh+1,5)
-	print(turn,cam[2].x+57,timeh+5,0)
+	print(turn .. "/10" ,cam[2].x+57,timeh+5,0)
 
 	for a = 0,3 do --cards
 		local offset = 100
@@ -590,7 +589,7 @@ function ui()
 		local y = card[a].y
 		local h = 16
 		local w = 16
-		if card[a].clr == 5 then --if owned
+		if card[a].clr == 5 then
 			rectfill(x+7,y-1,x+9+w,y+h+1,0)
 			rectfill(x-1,y-1,x+8,y+8,0)
 			rectfill(x+8,y,x+8+w,y+h,7)
@@ -613,6 +612,7 @@ function ui()
 end
 
 function draw_menu()
+  camera()
   local f = frames
   local loop = 578
   if frames > loop then f -= flr(frames / loop) * loop end
@@ -730,7 +730,7 @@ function logo(x,y)
   x = x + 11
   y = y + 11
   if every(10,30) == false then
-    pal(7,13)
+    pal(7,p[1].clr)
     spr(t,x-8,y,1,2)
     spr(h,x,y,1,2)
     spr(r,x+8,y,1,2)
@@ -743,7 +743,7 @@ function logo(x,y)
   if every(10,20) == true then
     y = y-8
     x = x-10
-    pal(7,3)
+    pal(7,p[2].clr)
     spr(d,x,y,1,2)
     spr(r,x+8,y,1,2)
     spr(i,x+8*2,y,1,2)
@@ -755,9 +755,40 @@ function logo(x,y)
   pal(7,7)
 end
 
-function winner(x,y)
+function winner(x,y,clr)
+  local w = 136
+  local r = 129
+  local i = 130
+  local n = 135
+  local e = 132
+  x = x+8
+  if every(10,20) == true then
+    pal(7,clr)
+    spr(w,x,y,1,2)
+    spr(i,x+8,y,1,2)
+    spr(n,x+8*2,y,1,2)
+    spr(n,x+8*3,y,1,2)
+    spr(e,x+8*4,y,1,2)
+    spr(r,x+8*5,y,1,2)
+    pal(7,7)
+  end
 end
-function loser(x,y)
+function loser(x,y,clr)
+  local l = 131
+  local o = 137
+  local s = 138
+  local r = 129
+  local e = 132
+  x = x+16
+  if every(10,30) == false then
+    pal(7,clr)
+    spr(l,x,y,1,2)
+    spr(o,x+8,y,1,2)
+    spr(s,x+8*2,y,1,2)
+    spr(e,x+8*3,y,1,2)
+    spr(r,x+8*4,y,1,2)
+    pal(7,7)
+  end
 end
 
 function spawn(type,sprite,rarity,x,y,c) --c has to be a nr between 1-100
@@ -819,6 +850,20 @@ function generatemap()
 end
 
 function init_game()
+  timeline = {}
+  timeline_actor = {}
+  timeline_counter = 1
+  timeuntilturn = 0
+  objects = {}
+  objid = 1
+  cardshuffle = false
+  shuffletime = 0
+  cardrow = 0
+  timelinerow = 0
+  turn = 1
+  activate = false
+  wait = 0
+
   generatemap()
 
 	p[1] = {}
@@ -850,7 +895,7 @@ function init_game()
 	p[2].load = 0
 	p[2].inv = {}
 	p[2].past = {}
-	p[2].clr = 9
+	p[2].clr = 12
   p[2].score = 0
   p[2].invworth = 0
   p[2].cardinv = {}
@@ -940,6 +985,7 @@ function update_game()
 			if p[1].load > 3 and p[2].load > 3 then
 				activate = true
 			end
+      if p[m].load > 3 then p[m].shuffle = true end
 		end
     score(m)
     p[m].loadspin = lerp(p[m].loadspin,p[m].load,0.4)
@@ -1018,11 +1064,11 @@ function _draw()
   if game_screen == "win" then
     draw_game()
     if p[1].win then
-      winner(cam[2].x,cam[2].y)
-      loser(cam[2].x+64,cam[2].y)
+      winner(cam[2].x,cam[2].y+56,p[1].clr)
+      loser(cam[2].x+64,cam[2].y+56,p[2].clr)
     elseif p[2].win then
-      winner(cam[2].x+64,cam[2].y)
-      loser(cam[2].x,cam[2].y)
+      winner(cam[2].x+64,cam[2].y+56,p[2].clr)
+      loser(cam[2].x,cam[2].y+56,p[1].clr)
     end
   end
 	-- rectfill(cam[2].x+18,cam[2].y+18,cam[2].x+42,cam[2].y+24,5)

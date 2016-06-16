@@ -20,10 +20,10 @@
   - +1 point
   - hack
 - game logic
-  - win/lose condition
-  - menu screen
+  <!-- - win/lose condition
+  - menu screen -->
   <!-- - logo -->
-  - game reset
+  <!-- - game reset -->
 - other
   - error if no actions picked
   - error if already picked action
