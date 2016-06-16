@@ -130,6 +130,7 @@ function push(a,b)
   	if p[a].dir == 3 and mget(ax-1,ay) == 9 then p[a].x += 8 end
 	end
 end
+
 function init_actions()
   forward = function (m)
   	if drill(m) == false then
@@ -319,7 +320,7 @@ function initiatedeck()
       spr = 86
     }
   }
-  
+
 	deck = {}
 	add(deck, cards[1])
 	add(deck, cards[1])
@@ -367,7 +368,14 @@ function activator()
 		 resetcards()
 		 activate = false
 		 turn += 1
+
+     --winner?
+     if p[1].score >= 1 or p[2].score >= 1 or turn >= 10 then
+       if p[1].score > p[2].score then p[1].win = true
+       elseif p[1].score < p[2].score then p[2].win = true end
+     end
      if p[1].win or p[2].win then game_screen = "win" return end
+
 		 cardshuffle = false
      p[1].cardinv = {}
      p[2].cardinv = {}
@@ -747,6 +755,11 @@ function logo(x,y)
   pal(7,7)
 end
 
+function winner(x,y)
+end
+function loser(x,y)
+end
+
 function spawn(type,sprite,rarity,x,y,c) --c has to be a nr between 1-100
 	for a=0,x do
 		for b=0,y do
@@ -924,7 +937,7 @@ function update_game()
 				cardshuffle = true
 				activator()
 			end
-			if p[1].load > 3 and p[2].load > 3 then --change to p[1].load and p[2].load
+			if p[1].load > 3 and p[2].load > 3 then
 				activate = true
 			end
 		end
@@ -971,6 +984,8 @@ function update_game()
 		cam[2].x = lerp(cam[2].x, p[2].x-92, camspeed)
 		cam[2].y = lerp(cam[2].y, p[2].y-64, camspeed)
 	end
+
+
 end
 
 function _update()
