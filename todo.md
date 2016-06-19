@@ -35,3 +35,4 @@
   - fix item spawn bug
 - beyond 1.0
   - "turn" attack 1-2p (get 100points. 10 turns until checkpoint)
+  - treadmill
