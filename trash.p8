@@ -10,17 +10,101 @@ function every(a,b) -- a: number of frames true b: 1-30 where 1 is every frame, 
   return frames % b < a
 end
 
+
+--[[
+sind : sprite index
+sz_x : x size
+sz_y : y size
+sx    : screen pos x
+sy    : screen pos y
+alpha: color to make transparent
+]]--
+
+function scale2x(sind,sx,sy,sz_x,sz_y,alpha)
+  alpha=alpha or 0
+  local offx=sind%16
+  local offy=flr(sind/16)
+  local soffx=offx*8
+  local soffy=offy*8
+  local sizex=sz_x-1
+  local sizey=sz_y-1
+  local a,b,c,d,e,f,g,h,i,e0,e1,e2,e3,x0,y0
+
+  for y=0,sizey do
+    for x=0,sizex do
+     e=sget(soffx+x,soffy+y)
+     a=e
+     b=e
+     c=e
+     d=e
+     f=e
+     g=e
+     h=e
+     i=e
+
+     if y>0 then
+      b=sget(soffx+x,soffy+y-1)
+     end
+
+     if y<sizey then
+      h=sget(soffx+x,soffy+y+1)
+     end
+
+     if x>0 then
+      d=sget(soffx+x-1,soffy+y)
+      if y>0 then
+       a=sget(soffx+x-1,soffy+y-1)
+      end
+      if y<sizey then
+       g=sget(soffx+x-1,soffy+y+1)
+      end
+     end
+
+     if x<sizex then
+      f=sget(soffx+x+1,soffy+y)
+
+      if y>0 then
+       c=sget(soffx+x+1,soffy+y-1)
+      end
+      if y<sizey then
+       i=sget(soffx+x+1,soffy+y+1)
+      end
+     end
+
+     e0=e
+     e1=e
+     e2=e
+     e3=e
+
+     if b!=h and d!=f then
+      if(d==b) e0=d
+      if(b==f) e1=f
+      if(d==h) e2=d
+      if(h==f) e3=f
+     end
+
+     --draw
+     x0=sx+x*2
+     y0=sy+y*2
+     if(e0!=alpha) pset(x0,  y0,  e0)
+     if(e1!=alpha) pset(x0+1,y0,  e1)
+     if(e2!=alpha) pset(x0,  y0+1,e2)
+     if(e3!=alpha) pset(x0+1,y0+1,e3)
+    end
+  end
+end
+
 function logo()
-  if frames > 45 then lid.y = lerp(lid.y,46,0.08) end
-  if flr(lid.y) == 46 then lid.spr = 5 end
+  if frames > 45 then lid.y = lerp(lid.y,trash.y-3,0.08) end
+  if flr(lid.y) == trash.y - 2 then lid.spr = 5 end
   if frames < 200 then
     rectfill(0,0,128,128,10)
-    spr(1,46,46,4,4)
-    spr(lid.spr,lid.x,lid.y,4,2)
+    scale2x(1,trash.x,trash.y,4*8,4*8,12)
+    scale2x(lid.spr,lid.x,lid.y,4*8,2*8,12)
   end
   if frames > 75 and frames < 220 then
-    line(lid.x+13,lid.y+8,lid.x+13,lid.y+9,10)
-    line(lid.x+11+7,lid.y+8,lid.x+11+7,lid.y+9,10)
+    rectfill(trash.x+27,trash.y+15,trash.x+28,trash.y+18,10)
+    rectfill(trash.x+28+7,trash.y+15,trash.x+29+7,trash.y+18,10)
 
     local c = 9
     local a = 10
@@ -30,27 +114,30 @@ function logo()
     local p = 26
     local d = 27
     local e = 28
-    local x = 32
-    local y = 78
-    spr(c,x,y)
-    spr(a,x+7,y)
-    spr(t,x+14,y)
-    spr(n,x+21,y)
-    spr(i,x+27,y)
-    spr(p,x+32,y)
-    spr(p,x+39,y)
-    spr(e,x+46,y)
-    spr(d,x+53,y)
+    local x = 2
+    local y = 113
+    scale2x(c,x,y,8,8,12)
+    scale2x(a,x+1*14,y,8,8,12)
+    scale2x(t,x+2*14,y,8,8,12)
+    scale2x(n,x+3*14,y,8,8,12)
+    scale2x(i,x+4*14,y,8,8,12)
+    scale2x(p,x+5*14,y,8,8,12)
+    scale2x(p,x+6*14,y,8,8,12)
+    scale2x(e,x+7*14,y,8,8,12)
+    scale2x(d,x+8*14,y,8,8,12)
   end
 end
 
 function _init()
   palt(12,true)
   palt(0,false)
+  trash = {}
+  trash.x = 32
+  trash.y = 32
   lid = {}
   lid.spr = 37
-  lid.x = 46
-  lid.y = 48
+  lid.x = trash.x
+  lid.y = trash.y+2
   frames = 0
 end
 
@@ -65,19 +152,19 @@ end
 
 __gfx__
 00000000ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc0000ccccc000ccccc0ccccc0c000ccc000000000000000000000000
-00000000ccccccccccccccccccccccccccccccccccccccccccccc000000ccccccccccccc0cccc0ccc0ccc0cc000000cc00ccc0cc000000000000000000000000
+00000000ccccccccccccccccccccccccccccccccccccccccccccc000000ccccccccccccc00cc00ccc00c00cc000000cc000c00cc000000000000000000000000
 00700700ccccccccccccccccccccccccccccccccccccccccccccc0cccc0ccccccccccccc0cccccccccccc0cccc0ccccc0cccc0cc000000000000000000000000
 00077000ccccccccccccccccccccccccccccccccccccccc000000000000000000ccccccc0ccccccccc0000cccc0ccccc0cccc0cc000000000000000000000000
 00077000cccccccccccccccccccccccccccccccccccccc07777777777777777770cccccc0cccccccc0ccc0cccc0ccccc0cccc0cc000000000000000000000000
-00700700cccccccccccc00000000cccccccccccccccccc07777777777777777770cccccc0cccc0cc0ccc00cccc0ccccc0cccc0cc000000000000000000000000
+00700700cccccccccccc00000000cccccccccccccccccc07777777777777777770cccccc00cc00cc0ccc00cccc0ccccc0cccc0cc000000000000000000000000
 00000000cccccccccc000000000000cccccccccccccccc00000000000000000000ccccccc0000cccc000c0ccccc000cc0cccc0cc000000000000000000000000
 00000000cccccccc0000000000000000cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc000000000000000000000000
 00000000ccccccc000000000000000000ccccccccccccccccccccccccccccccccccccccccc0ccccc0c000cccccccc0ccc0000ccc000000000000000000000000
-00000000ccccccc000000000000000000ccccccccccccccccccccccccccccccccccccccccc0ccccc00ccc0ccc000c0cc0cccc0cc000000000000000000000000
-00000000ccccccc077000000000000770ccccccccccccccccccccccccccccccccccccccccc0ccccc0cccc0cc0ccc00cc0cccc0cc000000000000000000000000
+00000000ccccccc000000000000000000ccccccccccccccccccccccccccccccccccccccccc0ccccc000c00ccc000c0cc00cc00cc000000000000000000000000
+00000000ccccccc077000000000000770ccccccccccccccccccccccccccccccccccccccccc0ccccc0cccc0cc00c000cc0cccc0cc000000000000000000000000
 00000000ccccccc077770000000077770ccccccccccccccccccccccccccccccccccccccccc0ccccc0cccc0cc0cccc0cc000000cc000000000000000000000000
-00000000ccccccc070777777777777070ccccccccccccccccccccccccccccccccccccccccc0ccccc00ccc0cc0cccc0cc0ccccccc000000000000000000000000
-00000000ccccccc070777777777777070ccccccccccccccccccccccccccccccccccccccccc0ccccc0c000ccc0ccc00cc0cccc0cc000000000000000000000000
+00000000ccccccc070777777777777070ccccccccccccccccccccccccccccccccccccccccc0ccccc000c00cc0cccc0cc0ccccccc000000000000000000000000
+00000000ccccccc070777777777777070ccccccccccccccccccccccccccccccccccccccccc0ccccc0c000ccc00c000cc00cc00cc000000000000000000000000
 00000000ccccccc070777077770777070ccccccccccccccccccccccccccccccccccccccccc0ccccc0cccccccc000c0ccc0000ccc000000000000000000000000
 00000000ccccccc070777077770777070ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc000000000000000000000000
 00000000ccccccc070777077770777070ccccccccccccccccccc00000000cccccccccccccccccccccccccccccccccccccccccccc000000000000000000000000

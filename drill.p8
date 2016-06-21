@@ -14,10 +14,12 @@ gemtypes[2] = {nr = 3, clr = 11}
 gemtypes[3] = {nr = 5, clr = 10}
 game_screen = "splash"
 
+
 fntspr=64
 fntdefaultcol=0
 fntx={}
 fnty={}
+
 
 --call in _init to setup font
 function initfont()
@@ -80,6 +82,36 @@ function rotlerp(a, b, t)
    return a + t * (b - a)
 end
 
+function make_spark(x,y,init_size,col) local s = {}
+  s.x=x
+  s.y=y
+  s.col= col
+  s.width = init_size
+  s.width_final = init_size + rnd(3)+1
+  s.t=0
+  s.max_t = 30+rnd(10)
+  s.dx = (rnd(.8)+.4)
+  s.dy = rnd(.05)
+  s.ddy = .02 add(particles,s)
+  return s
+end
+
+function move_spark(sp)
+  if (sp.t > sp.max_t) then
+     del(spark,sp)
+   end
+   if (sp.t > sp.max_t) then
+     sp.width +=1
+     sp.width = min(sp.width,sp.width_final)
+   end
+   sp.x = sp.x + sp.dx
+   sp.y = sp.y + sp.dy
+   sp.dy= sp.dy+ sp.ddy
+   sp.t = sp.t + 1
+end
+
+function draw_spark(s) circfill(s.x, s.y,s.width, s.col) end
+
 function drill(m)
 	local x = p[m].x / 8
 	local y = p[m].y / 8
@@ -93,6 +125,7 @@ function drill(m)
 		cam[m].x -= rnd(8)
 		cam[m].y += rnd(8)
 		cam[m].y -= rnd(8)
+    make_spark(x*8+4,y*8+4,rnd(4),7)
 		return true
 	else
 		return false
@@ -139,18 +172,12 @@ function init_actions()
   	add(p[m].past,{x = p[m].x,y = p[m].y})
     local x = p[m].x / 8
     local y = p[m].y / 8
-  	if 			p[m].dir == 0 and mget(x,y+1) ~= 9 then p[m].y += 8
-  	elseif  p[m].dir == 1 and mget(x-1,y) ~= 9 then p[m].x -= 8
-  	elseif  p[m].dir == 2 and mget(x,y-1) ~= 9 then p[m].y -= 8
-  	elseif  p[m].dir == 3 and mget(x+1,y) ~= 9 then p[m].x += 8
-  	end
-    pickup()
     local dir = p[m].dir
-    if 			dir == 0 then p[m].dir = 2
-  	elseif  dir == 1 then p[m].dir = 3
-  	elseif  dir == 2 then p[m].dir = 0
-  	elseif  dir == 3 then p[m].dir = 1
-    end
+  	if 			p[m].dir == 0 and mget(x,y+1) ~= 9 then p[m].y += 8 pickup() p[m].dir = 2
+  	elseif  p[m].dir == 1 and mget(x-1,y) ~= 9 then p[m].x -= 8 pickup() p[m].dir = 3
+  	elseif  p[m].dir == 2 and mget(x,y-1) ~= 9 then p[m].y -= 8 pickup() p[m].dir = 0
+  	elseif  p[m].dir == 3 and mget(x+1,y) ~= 9 then p[m].x += 8 pickup() p[m].dir = 1
+  	end
     if m == 1 then push(1,2)
     elseif m == 2 then push(2,1) end
     p[m].dir = dir
@@ -707,6 +734,9 @@ function draw_game()
   				if l == 4 then pset(p[m].dx+4,p[m].dy+4,7) end
   			end
   			pal(5,5)
+
+        foreach(particles, draw_spark)
+
   		end
 
   		camera(cam[m].x,cam[m].y)
@@ -863,6 +893,7 @@ function init_game()
   turn = 1
   activate = false
   wait = 0
+  particles = {}
 
   generatemap()
 
@@ -947,41 +978,43 @@ function _init()
 end
 
 function splash()
-  if frames > 45 then lid.y = lerp(lid.y,46,0.08) end
-  if flr(lid.y) == 46 then lid.spr = 196 end
-  if frames < 200 then
-    rectfill(0,0,128,128,10)
-    spr(192,48,46,4,4)
-    spr(lid.spr,lid.x,lid.y,4,2)
-  end
-  if frames > 75 and frames < 220 then
-    line(lid.x+13,lid.y+8,lid.x+13,lid.y+9,10)
-    line(lid.x+11+7,lid.y+8,lid.x+11+7,lid.y+9,10)
-
-    local c = 200
-    local a = 201
-    local t = 202
-    local n = 203
-    local i = 216
-    local p = 217
-    local d = 218
-    local e = 219
-    local x = 33
-    local y = 78
-    spr(c,x,y)
-    spr(a,x+7,y)
-    spr(t,x+14,y)
-    spr(n,x+21,y)
-    spr(i,x+27,y)
-    spr(p,x+33,y)
-    spr(p,x+40,y)
-    spr(e,x+47,y)
-    spr(d,x+54,y)
-  end
-  if frames > 260 then game_screen = "menu" end
+  -- if frames > 45 then lid.y = lerp(lid.y,46,0.08) end
+  -- if flr(lid.y) == 46 then lid.spr = 196 end
+  -- if frames < 200 then
+  --   rectfill(0,0,128,128,10)
+  --   spr(192,48,46,4,4)
+  --   spr(lid.spr,lid.x,lid.y,4,2)
+  -- end
+  -- if frames > 75 and frames < 220 then
+  --   line(lid.x+13,lid.y+8,lid.x+13,lid.y+9,10)
+  --   line(lid.x+11+7,lid.y+8,lid.x+11+7,lid.y+9,10)
+  --
+  --   local c = 200
+  --   local a = 201
+  --   local t = 202
+  --   local n = 203
+  --   local i = 216
+  --   local p = 217
+  --   local d = 218
+  --   local e = 219
+  --   local x = 33
+  --   local y = 78
+  --   spr(c,x,y)
+  --   spr(a,x+7,y)
+  --   spr(t,x+14,y)
+  --   spr(n,x+21,y)
+  --   spr(i,x+27,y)
+  --   spr(p,x+33,y)
+  --   spr(p,x+40,y)
+  --   spr(e,x+47,y)
+  --   spr(d,x+54,y)
+  -- end
+  -- if frames > 260 then game_screen = "menu" end
+  if frames > 0 then game_screen = "menu" end
 end
 
 function update_game()
+  foreach(particles, move_spark)
   for m = 1,2 do
 		if btn(5,m-1) then
 			if btn(0,m-1) then cam[m].x -= 5 end
