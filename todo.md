@@ -1,9 +1,9 @@
 ## todo list
 
 - fx
-  - drill
-  - get card
-  - score
+  <!-- - drill -->
+  <!-- - get card -->
+  <!-- - score -->
   - add action
   - add enemy action
 - sfx
@@ -24,15 +24,17 @@
   - menu screen -->
   <!-- - logo -->
   <!-- - game reset -->
+  - stealing
 - other
   - error if no actions picked
-  - error if already picked action
-  - out of bounds fix
+  <!-- - out of bounds fix -->
   - music?
   - new palette
-  - bombs
   - "arm" actions
   - fix item spawn bug
+  - true deck counting
 - beyond 1.0
   - "turn" attack 1-2p (get 100points. 10 turns until checkpoint)
   - treadmill
+  - bombs
+  - traps

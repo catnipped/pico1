@@ -85,47 +85,51 @@ end
 function make_spark(x,y,init_size,col) local s = {}
   s.x=x
   s.y=y
-  s.col= col
+  s.col = col
   s.width = init_size
   s.width_final = init_size + rnd(3)+1
   s.t=0
-  s.max_t = 30+rnd(10)
-  s.dx = (rnd(.8)+.4)
-  s.dy = rnd(.05)
-  s.ddy = .02 add(particles,s)
+  s.max_t = rnd(12)
+  s.dx = (rnd(.8)-.4)
+  s.dy = (rnd(.8)-.4)
+  s.ddy = .005
+  add(particles,s)
   return s
 end
 
 function move_spark(sp)
   if (sp.t > sp.max_t) then
-     del(spark,sp)
-   end
-   if (sp.t > sp.max_t) then
-     sp.width +=1
-     sp.width = min(sp.width,sp.width_final)
-   end
-   sp.x = sp.x + sp.dx
-   sp.y = sp.y + sp.dy
-   sp.dy= sp.dy+ sp.ddy
-   sp.t = sp.t + 1
+     del(particles,sp)
+  end
+  if (sp.t < sp.max_t) then
+    sp.width += -0.1
+    sp.width = min(sp.width,sp.width_final)
+  end
+  sp.x = sp.x + sp.dx
+  sp.y = sp.y + sp.dy
+  sp.dy= sp.dy+ sp.ddy
+  sp.t = sp.t + 1
 end
 
-function draw_spark(s) circfill(s.x, s.y,s.width, s.col) end
+function draw_spark(s) circfill(s.x, s.y,s.width+1, 0) circfill(s.x, s.y,s.width, s.col) end
 
 function drill(m)
 	local x = p[m].x / 8
 	local y = p[m].y / 8
 	local drilled = false
-	if p[m].dir == 0 and mget(x,y-1) == 9 then mset(x,y-1,8) drilled = true end
-	if p[m].dir == 2 and mget(x,y+1) == 9 then mset(x,y+1,8) drilled = true end
-	if p[m].dir == 1 and mget(x+1,y) == 9 then mset(x+1,y,8) drilled = true end
-	if p[m].dir == 3 and mget(x-1,y) == 9 then mset(x-1,y,8) drilled = true end
+	if p[m].dir == 0 and mget(x,y-1) == 9 then mset(x,y-1,8) drilled = true y -= 1 end
+	if p[m].dir == 2 and mget(x,y+1) == 9 then mset(x,y+1,8) drilled = true y += 1 end
+	if p[m].dir == 1 and mget(x+1,y) == 9 then mset(x+1,y,8) drilled = true x += 1 end
+	if p[m].dir == 3 and mget(x-1,y) == 9 then mset(x-1,y,8) drilled = true x -= 1 end
 	if drilled then
 		cam[m].x += rnd(8)
 		cam[m].x -= rnd(8)
 		cam[m].y += rnd(8)
 		cam[m].y -= rnd(8)
-    make_spark(x*8+4,y*8+4,rnd(4),7)
+    for z = 0,16 do
+      make_spark(x*8+rnd(8),y*8+rnd(8),rnd(3),7)
+    end
+    add(debris,{x = x*8, y = y*8, spr=flr(rnd(3))})
 		return true
 	else
 		return false
@@ -426,6 +430,9 @@ function pickup()
 					local z = 6 + flr(rnd(#deck-6))
 					add(deck,cards[z])
 					deck[#deck].clr = p[n].clr
+          for z = 0,8 do
+            make_spark(o.x+rnd(8),o.y+rnd(8),2,p[n].clr)
+          end
 					del(objects,o)
 				end
 			end
@@ -446,11 +453,6 @@ function score(n)
   if p[n].y > 8*(mapy) then
     if p[n].invworth < 0 then p[n].invworth = 0 end
     p[n].score += p[n].invworth
-    for g in all(p[n].inv) do
-      objects[g].x = 0
-      objects[g].y = 0
-    end
-    p[n].inv = {}
     p[n].invworth = 0
   end
   if p[n].score < 0 then p[n].score = 0 end
@@ -523,10 +525,10 @@ function ui()
   pal(5,p[1].clr)
   spr(32,cam[2].x+22,cam[2].y)
   pal(5,5)
-  if p[1].score < 10 then
-    print("0" .. p[1].score,cam[2].x+29,cam[2].y+1,p[1].clr)
+  if flr(p[1].oldscore) < 10 then
+    print("0" .. flr(p[1].oldscore),cam[2].x+29,cam[2].y+1,p[1].clr)
   else
-    print(p[1].score,cam[2].x+29,cam[2].y+1,p[1].clr)
+    print(flr(p[1].oldscore),cam[2].x+29,cam[2].y+1,p[1].clr)
   end
   if p[1].invworth > 0 then
     print("+" .. p[1].invworth,cam[2].x+38,cam[2].y+1,5)
@@ -560,10 +562,10 @@ function ui()
   spr(32,l,cam[2].y)
   pal(5,5)
 
-  if p[2].score < 10 then
-    print("0" .. p[2].score,l+7,cam[2].y+1,p[2].clr)
+  if flr(p[2].oldscore) < 10 then
+    print("0" .. flr(p[2].oldscore),l+7,cam[2].y+1,p[2].clr)
   else
-    print(p[2].score,l+7,cam[2].y+1,p[2].clr)
+    print(flr(p[2].oldscore),l+7,cam[2].y+1,p[2].clr)
   end
 
   --turn wheel
@@ -662,7 +664,9 @@ function draw_game()
   		if m == 2 then clip(0,0,64,128) color = p[1].clr end
   		if m == 1 then clip(64,0,128,128) color = p[2].clr end
   		rect(-1,-1,((mapx+1)*8),((mapy+3)*8),7)
-
+      for d in all(debris) do
+        spr(12+d.spr,d.x,d.y)
+      end
       if btn(5,0) and m == 2 then
         for x = p[1].x-64,p[1].x+64,8 do
           for y = p[1].y-64,p[1].y+64,8 do
@@ -682,23 +686,32 @@ function draw_game()
       end
 
       map(0,0,0,0,mapx+1,mapy+1)
+      line(0,(mapy+1)*8-1,(mapx+1)*8,(mapy+1)*8-1,7)
   		map(0,mapy+1,0,(mapy+1)*8,mapx+1,mapy+8)
+
+      rectfill(3*8, ((mapy+1)*8)+4, (mapx-2)*8, ((mapy+2)*8)+2, 0)
+      print("delivery area  gem pls", (3*8)+1, ((mapy+1)*8)+5,7)
 
   		for o in all(objects) do
         if o.x ~= 0 then
           if o.spr == 17 then
             pal(5,color)
             spr(o.spr,o.x,o.y)
-          else
-      			pal(5,o.clr)
-      			spr(o.spr,o.x,o.y)
-            -- if btn(5,0) and m == 2 then
-            --   print(o.worth, o.x+7,o.y+7,0)
-            --   print(o.worth, o.x+9,o.y+9,0)
-            --   print(o.worth, o.x+9,o.y+7,0)
-            --   print(o.worth, o.x+9,o.y+7,0)
-            --   print(o.worth, o.x+8,o.y+8,o.clr)
-            -- end
+          elseif o.spr == 33 then
+            if m == 2 and o.clr ~= p[2].clr then
+              pal(5,o.clr)
+      			  spr(o.spr,o.x,o.y)
+            elseif m == 1 and o.clr ~= p[1].clr then
+              pal(5,o.clr)
+              spr(o.spr,o.x,o.y)
+            end
+            if btn(5,0) and m == 2 then
+              print(o.worth, o.x+7,o.y+7,0)
+              print(o.worth, o.x+9,o.y+9,0)
+              print(o.worth, o.x+9,o.y+7,0)
+              print(o.worth, o.x+9,o.y+7,0)
+              print(o.worth, o.x+8,o.y+8,o.clr)
+            end
           end
           pal(5,5)
         end
@@ -894,6 +907,7 @@ function init_game()
   activate = false
   wait = 0
   particles = {}
+  debris = {}
 
   generatemap()
 
@@ -910,6 +924,7 @@ function init_game()
 	p[1].past = {}
 	p[1].clr = 14
   p[1].score = 0
+  p[1].oldscore = 0
   p[1].invworth = 0
   p[1].cardinv = {}
   p[1].shuffle = false
@@ -928,6 +943,7 @@ function init_game()
 	p[2].past = {}
 	p[2].clr = 12
   p[2].score = 0
+  p[2].oldscore = 0
   p[2].invworth = 0
   p[2].cardinv = {}
   p[2].shuffle = false
@@ -1016,6 +1032,9 @@ end
 function update_game()
   foreach(particles, move_spark)
   for m = 1,2 do
+
+    p[m].oldscore = lerp(p[m].oldscore,p[m].score,0.1)
+
 		if btn(5,m-1) then
 			if btn(0,m-1) then cam[m].x -= 5 end
 			if btn(1,m-1) then cam[m].x += 5 end
@@ -1039,7 +1058,16 @@ function update_game()
 				for z = 1,count(p[m].inv) do
 					local id = p[m].inv[z]
 					local a = #p[m].past - z +1
-					if a > 0 then
+          if p[m].y > mapy*8 then
+            if abs(objects[id].x - p[m].x) < 1 and abs(objects[id].y - cam[m].y) < 1 then
+              objects[id].spr = 0
+              del(p[m].inv,id)
+            else
+              objects[id].clr = p[m].clr
+              objects[id].x = lerp(objects[id].x, p[m].x, 0.1*z)
+              objects[id].y = lerp(objects[id].y, cam[m].y, 0.1*z)
+            end
+					elseif a > 0 then
             if objects[id].x - p[m].past[a].x > 1 then
 			        objects[id].x = lerp(objects[id].x, p[m].past[a].x, 0.1)
             else objects[id].x = p[m].past[a].x end
@@ -1064,8 +1092,8 @@ function update_game()
     p[m].dx = lerp(p[m].dx,p[m].x,0.5)
     p[m].dy = lerp(p[m].dy,p[m].y,0.5)
     p[m].rot = rotlerp(p[m].rot,(p[m].dir+1)*0.25,0.4)
-    if p[m].dx - p[m].x < 2 then p[m].dx = p[m].x end
-    if p[m].dy - p[m].y < 2 then p[m].dy = p[m].y end
+    if abs(p[m].dx - p[m].x) < 1 then p[m].dx = p[m].x end
+    if abs(p[m].dy - p[m].y) < 1 then p[m].dy = p[m].y end
 	end
 
   if p[1].shuffle and p[2].shuffle then
@@ -1150,14 +1178,14 @@ end
 
 
 __gfx__
-00000000cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc0007070075557555cccccccc00000000000000000000000000000000
-00000000c000000ccccccccc0000ccccccc55cccccc55cccccc00cccccc55ccccccccccc0077000055555757cccccccc00000000000000000000000000000000
-00700700c055550ccc0000cc757000ccccc55cccccc55cccccc00cccccc55ccccccccccc0000007755755575cccccccc00000000000000000000000000000000
-00077000c050050ccc0750cc757570ccc005555cc555500cc555555cc555555ccccccccc7007070057575555ccc55ccc00000000000000000000000000000000
-00077000c050050cc005000c505050ccc005555cc555500cc555555cc555555ccccccccc7000000075557555ccc55ccc00000000000000000000000000000000
-00700700c055550cc077550c505000ccccc55cccccc55cccccc55cccccc00ccccccccccc0077000055555757cccccccc00000000000000000000000000000000
-00000000c000000cc055000c0000ccccccc55cccccc55cccccc55cccccc00ccccccccccc0700707755755575cccccccc00000000000000000000000000000000
-00000000ccccccccc077550ccccccccccccccccccccccccccccccccccccccccccccccccc0000007057575555cccccccc00000000000000000000000000000000
+00000000cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc000707007ccc7ccccccccccccccccc7ccccccccccccccccc00000000
+00000000c000000ccccccccc0000ccccccc55cccccc55cccccc00cccccc55ccccccccccc00770000ccccc7c7ccccccccc7ccccccccccc7cccc7ccccc00000000
+00700700c055550ccc0000cc757000ccccc55cccccc55cccccc00cccccc55ccccccccccc00000077cc7ccc7cccccccccccccccccc7cccccccccccccc00000000
+00077000c050050ccc0750cc757570ccc005555cc555500cc555555cc555555ccccccccc70070700c7c7ccccccc55ccc7ccccccccccccccccccc7ccc00000000
+00077000c050050cc005000c505050ccc005555cc555500cc555555cc555555ccccccccc700000007ccc7cccccc55ccccccc7c7ccccccccccccccccc00000000
+00700700c055550cc077550c505000ccccc55cccccc55cccccc55cccccc00ccccccccccc00770000ccccc7c7ccccccccccccccccccccccc7cccccccc00000000
+00000000c000000cc055000c0000ccccccc55cccccc55cccccc55cccccc00ccccccccccc07007077cc7ccc7ccccccccccc7cccccccccccccccc7cccc00000000
+00000000ccccccccc077550ccccccccccccccccccccccccccccccccccccccccccccccccc00000070c7c7ccccccccccccccccccc7cc7ccccccccccccc00000000
 cccccccccccccccc000000000000000000cc000c00000000000000000000000000000000777c77c77cccccccccccccccccccccc7000000000000000000000000
 c000000ccc0000cc000000000000000ccc0c00cc00000000000000000000000000000000ccccccccccccccccccccccccccccccc7000000000000000000000000
 c077770cc075550c0000000000ccc000000ccccc00000000000000000000000000000000cccccccc7cccccccccccccccccccccc7000000000000000000000000
