@@ -692,6 +692,7 @@ function draw_game()
       rectfill(3*8, ((mapy+1)*8)+4, (mapx-2)*8, ((mapy+2)*8)+2, 0)
       print("delivery area  gem pls", (3*8)+1, ((mapy+1)*8)+5,7)
 
+
   		for o in all(objects) do
         if o.x ~= 0 then
           if o.spr == 17 then
