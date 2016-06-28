@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 5
+version 8
 __lua__
 
 credits = {}
@@ -54,6 +54,62 @@ p2.car = 1
 p2.winner = false
 p2.deathcount = 0
 p2.guage = 5
+
+function splash()
+  frames += 0.5
+  palt(12,true)
+  palt(0,false)
+  if frames > 45 then lid.y = lerp(lid.y,trash.y-1,0.08) end
+  if flr(lid.y) == trash.y - 1 then lid.spr = 68 end
+  if frames < 200 then
+    rectfill(0,0,128,128,10)
+    spr(64,trash.x,trash.y,4,4)
+    spr(lid.spr,lid.x,lid.y,4,2)
+  end
+  if frames > 55 and trash.sfx then
+  		sfx(14,0)
+  		trash.sfx = false
+  end
+  if frames > 75 and frames < 220 then
+    line(trash.x+13,trash.y+7,trash.x+13,trash.y+8,10)
+    line(trash.x+18,trash.y+7,trash.x+18,trash.y+8,10)
+
+    local c = 72
+    local a = 73
+    local t = 74
+    local n = 75
+    local i = 88
+    local p = 89
+    local d = 90
+    local e = 91
+    local x = 32
+    local y = trash.y + 32
+    spr(c,x,y)
+    spr(a,x+1*7,y)
+    spr(t,x+2*7,y)
+    spr(n,x+3*7,y)
+    spr(i,x+4*7-1,y)
+    spr(p,x+5*7-2,y)
+    spr(p,x+6*7-2,y)
+    spr(e,x+7*7-2,y)
+    spr(d,x+8*7-2,y)
+  end
+  if frames > 260 then trash.done = true frames = 0 end
+  palt()
+end
+
+function init_splash()
+  trash = {}
+  trash.x = 47
+  trash.y = 46
+  trash.sfx = true
+  trash.done = false
+  lid = {}
+  lid.spr = 100
+  lid.x = trash.x
+  lid.y = trash.y+2
+  frames = 0
+end
 
 function carspawn (nr,plr) --car array
   car[nr] = {}
@@ -139,12 +195,12 @@ function cardraw(p)
   function shieldcircle(c,p)
     if p > 3 then local plr = p2 else plr = p1 end
     if c.shield == true and plr.guage < 1 then
-      if every(2,3) == true then
+      if every(3,6) == true then
         circfill(c.x-0.5,c.y-0.5,7,7)
       end
     elseif c.shield == true then
       circfill(c.x-0.5,c.y-0.5,7,7)
-      if every(2,4) == true then
+      if every(4,8) == true then
         circfill(c.x-0.5,c.y-0.5,7,11)
       end
     end
@@ -212,7 +268,7 @@ function tracks(c)
     end
 
   else
-    c.tracks_counter += 1
+    c.tracks_counter += 0.5
   end
 
   for x = c.tracks_length-length ,c.tracks_length do
@@ -224,9 +280,9 @@ function tracks(c)
 end
 
 function caranim(p)
-  p.x = p.x+(p.vel*0.1)*sin(p.rot)
-  p.y = p.y+(p.vel*0.1)*cos(p.rot)
-  p.vel = lerp(p.vel,p.throt,0.05)
+  p.x = p.x+(p.vel*0.05)*sin(p.rot)
+  p.y = p.y+(p.vel*0.05)*cos(p.rot)
+  p.vel = lerp(p.vel,p.throt,0.025)
   p.rot = home(p.rot,p.dir,p.rotspeed)
   if p.vel > 0.5 then p.rotspeed = 0.005/(p.vel*0.3) end
 end
@@ -238,9 +294,9 @@ function attack_roll(c)
       c.hit = true
       sfx(7)
       car[c.target].damaged = true
-      c.attack_counter += 1
+      c.attack_counter += 0.5
     else
-      c.attack_counter += 1
+      c.attack_counter += 0.5
       if c.attack_counter > 5 then c.attack_counter = 0 end
     end
   end
@@ -252,7 +308,7 @@ function health(c)
     if c.damagedcounter == 0 and c.shield == true then c.hp -= 0.01
     elseif c.damagedcounter == 0 and c.shield == false then c.hp -= 0.1 end
     if flr(old_hp) > flr(c.hp) then freeze = 5 sfx(6) end
-    c.damagedcounter += 1
+    c.damagedcounter += 0.5
     if c.damagedcounter > 1 then
       c.damaged = false
       c.damagedcounter = 0
@@ -280,7 +336,7 @@ function collision(c)
   end
 
   if collide == true then
-    c.timer += 1
+    c.timer += 0.5
     collide = false
     if c.timer > 10 then
       c.timer = 0
@@ -293,7 +349,7 @@ function death_anim(c)
   if c.death_counter <= 15 then
     circfill(c.x,c.y,c.death_counter,10)
     circfill(c.x,c.y,15 - c.death_counter*0.7,7)
-    c.death_counter += 1
+    c.death_counter += 0.5
   end
 end
 
@@ -308,7 +364,7 @@ function turret(c,a,b)
 
   c.target = smallest(length)
   if c.dead == false then
-    c.turret = rotlerp(c.turret,atan2(car[c.target].y-c.y,car[c.target].x-c.x),0.2)
+    c.turret = rotlerp(c.turret,atan2(car[c.target].y-c.y,car[c.target].x-c.x),0.1)
   end
 end
 
@@ -339,10 +395,10 @@ function control_active(x,plr)
       end
     end
     if btn(1,p) then
-      x.dir += 0.03
+      x.dir += 0.015
     end
     if btn(0,p) then
-      x.dir += -0.03
+      x.dir += -0.015
     end
 
     if btn(5,p) and plr.guage > 0 and x.dead == false then
@@ -495,16 +551,16 @@ function ui(x,y,c,p)
   if velocity < 0 then velocity = 0 end
   rectfill(x+13,y+1,velocity,y+box.height-1,0)
   line(throttle,y+1,throttle,y+box.height-1,7)
-  spr(69+c.throt,x+box.width-5,y+1)
+  spr(37+c.throt,x+box.width-5,y+1)
   --health
   if c.damaged == true then pal(7,0) end
-  spr(68,x+1,y+1) spr(69+c.hp,x+7,y+1)
+  spr(36,x+1,y+1) spr(37+c.hp,x+7,y+1)
   pal()
   --special status
   if c.status == "danger" and c.dead == false then
-    if every(6,8) == true then spr(80,x,y+status_position,4,1) end
+    if every(12,16) == true then spr(48,x,y+status_position,4,1) end
   elseif c.status == "auto" and c.dead == false then
-    spr(64,x,y+status_position,4,1)
+    spr(32,x,y+status_position,4,1)
   end
 
 end
@@ -530,14 +586,14 @@ end
 
 function shield(c,p)
   if c.shield == true then
-    if every(1,5) == true then sfx(5, -1, 1) end
-    p.guage -= 0.05
+    if every(2,10) == true then sfx(5, -1, 1) end
+    p.guage -= 0.025
     if p.guage <= 0 then
       c.shield = false
     end
     c.hitbox = 7
   elseif c.shield == false then
-    if p.guage < 5 then p.guage += 0.01 end
+    if p.guage < 5 then p.guage += 0.025 end
     c.hitbox = 3
   end
   if p.guage > 5 then p.guage = 5 end
@@ -548,11 +604,11 @@ function drawshield(x,y,p)
     line(x,y,x+(94*(p.guage/5)),y,7)
     if p.guage < 2.5 then line(x,y,x+(94*(p.guage/5)),y,10) end
     for c = 1*p.nr,3*p.nr do
-      if car[c].shield == true and every(2,4) == true then
+      if car[c].shield == true and every(4,8) == true then
         line(x,y,x+(94*(p.guage/5)),y,11)
       end
     end
-  elseif p.guage < 1 and every(2,3) == true then
+  elseif p.guage < 1 and every(4,6) == true then
     line(x,y,x+(94*(p.guage/5)),y,7)
   end
 end
@@ -597,6 +653,7 @@ end
 
 function _init()
   cls()
+  init_splash()
   for x=0,24,1 do
     for y=0,24,1 do
       mset(x,y,flr(rnd(6)+1))
@@ -610,7 +667,7 @@ function ai(plr)
   if plr.nr == 1 then a=1 b=3 c=4 d=6
   elseif plr.nr == 2 then a=4 b=6 c=1 d=3 end
 
-  if every(1,60+rnd(30)) == true and rnd(10) > 5 then
+  if every(1,120+rnd(60)) == true and rnd(10) > 5 then
     switch(plr) sfx(2)
     for x = a,b do
       if car[x].active == true and car[x].dead == true then switch(plr) end
@@ -630,11 +687,11 @@ function ai(plr)
       local distance = pythagoras(car[x].x,car[x].y,car[cartarget])
 
       local target = atan2(car[cartarget].y-car[x].y,car[cartarget].x-car[x].x)
-      car[x].dir = rotlerp(car[x].dir,target,0.1)
+      car[x].dir = rotlerp(car[x].dir,target,0.05)
 
       if distance < 10 then car[x].dir += rnd(0.01) end
       if car[x].damaged == true and distance > 10-car[x].vel and car[x].dead == false then car[x].shield = true end
-      if every(1,30+rnd(30)) == true then
+      if every(1,60+rnd(60)) == true then
         if distance > 15 and car[x].throt < 5 then
           if rnd(10) > 4 then car[x].throt += 1 sfx(3) end
         elseif car[x].throt > 0 and car[x].throt < 5 then
@@ -648,7 +705,7 @@ end
 
 function game_update()
   local countdown = flr(start_counter/30)
-  if start_counter > 0 then start_counter -= 1 end
+  if start_counter > 0 then start_counter -= 0.5 end
   if countdown > flr(start_counter/30) then sfx(4) end
 
   for x = 1,6 do
@@ -656,7 +713,7 @@ function game_update()
     if y >= 1 then sfx(8+y,-1,1) end
   end
 
-  frames += 1
+  frames += 0.5
   if frames > 30*100 then
     frames = 0
   end
@@ -700,8 +757,8 @@ function game_update()
     current_car(p2)
 
     --camera
-    cam.x = lerp(cam.x, lerp(64,lerp(p1.x,p2.x,0.5),0.5)-64, 0.05)
-    cam.y = lerp(cam.y, lerp(64,lerp(p1.y,p2.y,0.5),0.5)-64, 0.05)
+    cam.x = lerp(cam.x, lerp(64,lerp(p1.x,p2.x,0.5),0.5)-64, 0.025)
+    cam.y = lerp(cam.y, lerp(64,lerp(p1.y,p2.y,0.5),0.5)-64, 0.025)
   end
 
   if freeze > 0 then
@@ -752,11 +809,11 @@ function game_update()
     elseif pythagoras(center.x,center.y,car[x]) > arena then
       car[x].dir = atan2(64-car[x].y,64-car[x].x)
       car[x].status = "auto"
-      car[x].vel = lerp(car[x].vel,2,0.1)
+      car[x].vel = lerp(car[x].vel,2,0.05)
     elseif car[x].hp < 2 then car[x].status = "danger" end
   end
   -- sudden death
-  if start_counter == 0 then maintimer -= 1 end
+  if start_counter == 0 then maintimer -= 0.5 end
   if arena > 25 then
     if maintimer <= 0 then arena -= 0.03 end
   end
@@ -771,7 +828,7 @@ function game_update()
   end
   if p2.deathcount == 3 then p1.winner = true end
   p2.deathcount = 0
-  if p1.winner == true or p2.winner == true then end_counter -= 1 end
+  if p1.winner == true or p2.winner == true then end_counter -= 0.5 end
   if end_counter < 0 then
     if p1.winner == true then
       p1.wins += 1
@@ -816,13 +873,13 @@ function game_draw()
     cargui(car[x])
   end
   if maintimer < 0 then
-    if every(3,14) == true then
+    if every(1,20) == true then
       circ(center.x,center.y,arena+6,5)
     end
-    if every(3,16) == true then
+    if every(2,20) == true then
       circ(center.x,center.y,arena+4,6)
     end
-    if every(3,18) == true then
+    if every(3,20) == true then
       circ(center.x,center.y,arena+2,6)
     end
   end
@@ -854,32 +911,32 @@ function game_draw()
   if p1.winner == true then
     local y = 62
     rectfill(cam.x,cam.y+y-1,cam.x+128,cam.y+y+5,p1.clr)
-    spr(85,cam.x+36,cam.y+y)
-    spr(70,cam.x+44,cam.y+y)
-    spr(86,cam.x+52,cam.y+y,5,1)
+    spr(53,cam.x+36,cam.y+y)
+    spr(38,cam.x+44,cam.y+y)
+    spr(54,cam.x+52,cam.y+y,5,1)
   end
   if p2.winner == true then
     local y = 62
     rectfill(cam.x,cam.y+y-1,cam.x+128,cam.y+y+5,p2.clr)
-    spr(85,cam.x+36,cam.y+y)
-    spr(71,cam.x+44,cam.y+y)
-    spr(86,cam.x+52,cam.y+y,5,1)
+    spr(53,cam.x+36,cam.y+y)
+    spr(39,cam.x+44,cam.y+y)
+    spr(54,cam.x+52,cam.y+y,5,1)
   end
 
-  if start_counter > 0 then spr(70+(start_counter/30),center.x-3,center.y-3) end
+  if start_counter > 0 then spr(37+(start_counter/30),center.x-3,center.y-3) end
 end
 
 function title_update()
-  frames += 1
+  frames += 0.5
   gfx_p1_target = center.x-55
   gfx_p2_target = center.x-5
   logo_target = center.y+8
   gfx_circle_target = 0
 
-  start_gfx_logo = lerp(start_gfx_logo,logo_target,0.05)
-  start_gfx_p1 = lerp(start_gfx_p1,gfx_p1_target,0.05)
-  start_gfx_p2 = lerp(start_gfx_p2,gfx_p2_target,0.05)
-  start_gfx_circle = lerp(start_gfx_circle,gfx_circle_target,0.05)
+  start_gfx_logo = lerp(start_gfx_logo,logo_target,0.025)
+  start_gfx_p1 = lerp(start_gfx_p1,gfx_p1_target,0.025)
+  start_gfx_p2 = lerp(start_gfx_p2,gfx_p2_target,0.025)
+  start_gfx_circle = lerp(start_gfx_circle,gfx_circle_target,0.025)
 
   if frames > 30*60 then
     p1.ready = true
@@ -1047,13 +1104,12 @@ function title_draw()
 
   print(sub(credits.s,1+credits.p,32+credits.p),1,121,0)
   print(sub(credits.s,1+credits.p,32+credits.p),0,120,7)
-  credits.p += 0.2
+  credits.p += 0.1
   if credits.p > #credits.s then credits.p = 1 end
 end
 
-function _update()
-
-  if game_start == false then
+function _update60()
+  if game_start == false and trash.done == true then
     title_update()
   end
   if game_start == true then
@@ -1063,9 +1119,12 @@ end
 
 function _draw()
   cls()
-  if game_start == false then
+  if game_start == false and trash.done == false then
+    splash()
+  elseif game_start == false and trash.done == true then
     title_draw()
   end
+
   if game_start == true then
     game_draw()
   end
@@ -1090,22 +1149,6 @@ __gfx__
 57777777777777755577777777777775557777777777777557aaaaa77777bbbbb700000000000000000000000000000000000000000000000000000000000000
 57777755555555555555555555555555555555555555555557777777777777777700000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000070700007777700077770000777770007777700077077000777770000000000000000000000000000000000000000000
 00000000000000000000000000000000777770007707700007770000000770000007700077077000770000000000000000000000000000000000000000000000
 77777770770007707777777077777770777770007707700007770000777770000777700077777000777770000000000000000000000000000000000000000000
@@ -1122,22 +1165,38 @@ __gfx__
 77000770770007707700077077777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 77777000770007700777777077000770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc0000ccccc000ccccc0ccccc0c000ccc00000000000000000000000000000000
+ccccccccccccccccccccccccccccccccccccccccccccc000000ccccccccccccc0cccc0ccc0ccc0cc000000cc00ccc0cc00000000000000000000000000000000
+ccccccccccccccccccccccccccccccccccccccccccccc0cccc0ccccccccccccc0cccccccccccc0cccc0ccccc0cccc0cc00000000000000000000000000000000
+ccccccccccccccccccccccccccccccccccccccc000000000000000000ccccccc0ccccccccc0000cccc0ccccc0cccc0cc00000000000000000000000000000000
+cccccccccccccccccccccccccccccccccccccc07777777777777777770cccccc0cccccccc0ccc0cccc0ccccc0cccc0cc00000000000000000000000000000000
+cccccccccccc00000000cccccccccccccccccc07777777777777777770cccccc0cccc0cc0ccc00cccc0ccccc0cccc0cc00000000000000000000000000000000
+cccccccccc000000000000cccccccccccccccc00000000000000000000ccccccc0000cccc000c0ccccc000cc0cccc0cc00000000000000000000000000000000
+cccccccc0000000000000000cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+ccccccc000000000000000000ccccccccccccccccccccccccccccccccccccccccc0ccccc0c000cccccccc0ccc0000ccc00000000000000000000000000000000
+ccccccc000000000000000000ccccccccccccccccccccccccccccccccccccccccc0ccccc00ccc0ccc000c0cc0cccc0cc00000000000000000000000000000000
+ccccccc077000000000000770ccccccccccccccccccccccccccccccccccccccccc0ccccc0cccc0cc0ccc00cc0cccc0cc00000000000000000000000000000000
+ccccccc077770000000077770ccccccccccccccccccccccccccccccccccccccccc0ccccc0cccc0cc0cccc0cc000000cc00000000000000000000000000000000
+ccccccc070777777777777070ccccccccccccccccccccccccccccccccccccccccc0ccccc00ccc0cc0cccc0cc0ccccccc00000000000000000000000000000000
+ccccccc070777777777777070ccccccccccccccccccccccccccccccccccccccccc0ccccc0c000ccc0ccc00cc0cccc0cc00000000000000000000000000000000
+ccccccc070777077770777070ccccccccccccccccccccccccccccccccccccccccc0ccccc0cccccccc000c0ccc0000ccc00000000000000000000000000000000
+ccccccc070777077770777070ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+ccccccc070777077770777070ccccccccccccccccccc00000000cccccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+ccccccc070777077770777070ccccccccccccccccc007777777700cccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+ccccccc070777077770777070ccccccccccccccc0077777777777700cccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+ccccccc070777077770777070cccccccccccccc077777000000777770ccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+ccccccc070777077770777070ccccccccccccc07777770777707777770cccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+ccccccc070777077770777070ccccccccccccc00777777777777777700cccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+ccccccc070777077770777070ccccccccccccc07007777777777770070cccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+ccccccc070777077770777070ccccccccccccc00770077777777007700cccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+ccccccc070777077770777070cccccccccccccc000770000000077000ccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+ccccccc077777077770777770cccccccccccccccc00077777777000ccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+cccccccc0077707777077700cccccccccccccccccccc00000000cccccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+cccccccccc007777777700cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+cccccccccccc00000000cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc00000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1253,7 +1312,7 @@ __sfx__
 0006000006151041110c101181010c101181010010100101001010010100101001010010100101001010010100101001010010100101001010010100101001010010100101001010010100101001010010100101
 0006000006151071110c101181010c101181010010100101001010010100101001010010100101001010010100101001010010100101001010010100101001010010100101001010010100101001010010100101
 00060000061510b1110c101181010c101181010010100101001010010100101001010010100101001010010100101001010010100101001010010100101001010010100101001010010100101001010010100101
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0119000024610186102a171171210d15632536265361c516105160650514505015060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
