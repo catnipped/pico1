@@ -1104,7 +1104,7 @@ function title_draw()
 
   print(sub(credits.s,1+credits.p,32+credits.p),1,121,0)
   print(sub(credits.s,1+credits.p,32+credits.p),0,120,7)
-  credits.p += 0.1
+  credits.p += 0.1c
   if credits.p > #credits.s then credits.p = 1 end
 end
 
