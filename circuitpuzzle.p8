@@ -16,10 +16,21 @@ cam.newy = 0
 
 placeblo = {}
 
-red = 8
+pink = 14
 green = 11
-blue = 12
+purple = 13
 new_id = 1
+
+function push(list,item)
+  local temp = {}
+  for x in all(list) do
+    add(temp,x)
+  end
+  list = {item}
+  for x in all(temp) do
+    add(list,x)
+  end
+end
 
 function spawn_tile(x,color1,color2)
   local a = 5
@@ -28,9 +39,9 @@ function spawn_tile(x,color1,color2)
   a = color1
   b = color2
   local tile = {
-     { sprite_x = 1, sprite_y = 17, side = {a, a, b, a}, rotation = 1, color = {color1,color2}, id = new_id },
-     { sprite_x = 2, sprite_y = 18, side = {a, e, a, a}, rotation = 1, color = {color1,color2}, id = new_id },
-     { sprite_x = 3, sprite_y = 19, side = {b, b, a, a}, rotation = 1, color = {color1,color2}, id = new_id },
+     { sprite_x = 1, sprite_y = 17, side = {b, a, b, a}, rotation = 1, color = {color1,color2}, id = new_id },
+     { sprite_x = 2, sprite_y = 18, side = {e, b, b, b}, rotation = 1, color = {color1,color2}, id = new_id },
+     { sprite_x = 3, sprite_y = 19, side = {a, a, b, b}, rotation = 1, color = {color1,color2}, id = new_id },
      { sprite_x = 4, sprite_y = 20, side = {a, e, a, a}, rotation = 1, color = {color1,color2}, id = new_id }
    }
    new_id += 1
@@ -38,7 +49,7 @@ function spawn_tile(x,color1,color2)
 end
 
 function spawn_block(x)
-  local color = {red,green}
+  local color = {pink,green,purple}
   local color1 = color[flr(rnd(#color))+1]
   del(color,color1)
   local color2 = color[flr(rnd(#color))+1]
@@ -69,6 +80,13 @@ function place_block(block)
   add(placeblo,block[2])
 end
 
+function opposite(x)
+  if x == 1 then return 3
+  elseif x == 2 then return 4
+  elseif x == 3 then return 1
+  else return 2 end
+end
+
 function check_neighbours(tile)
   local id = {x = tile.x/8, y = tile.y/8}
   local search = {}
@@ -78,13 +96,19 @@ function check_neighbours(tile)
   search[4] = id.x .. id.y+1
 
   local neighbours = {}
+  local sidecounter = 1
   for path in all(search) do
+    local color = tile.side[sidecounter]
+    sidecounter += 1
     for x in all(placeblo) do
-      if path == x.id then
-        add(neighbours,x.id)
+      if path == x.id and color == x.side[opposite(sidecounter)] then
+        add(neighbours, {id = x.id, color = x.side[opposite(sidecounter)]})
       end
     end
   end
+  -- for x in all(neighbours) do
+  --   printh(tile.id .. "= " .. x.id .. ": " .. x.color)
+  -- end
   return neighbours
 end
 
@@ -96,6 +120,41 @@ function plug_in(tile)
   end
   if tile.x+8 > level.width*8 and tile.side[2] ~= 7 then
     plug[y+10] = {connected = true, color = tile.side[2]}
+  end
+end
+
+function contains(table, val)
+   for i=1,#table do
+      if table[i] == val then
+         return true
+      end
+   end
+   return false
+end
+
+function check_line(line)
+  if plug[line].connected then
+    local id = 1 .. line
+    local connections = {}
+    for tile in all(placeblo) do
+      if tile.id == id then add(connections,tile.id) end
+    end
+    pathfinder(connections, plug[line].color)
+    printh(line .. ": " .. #connections)
+  end
+end
+
+function pathfinder(list, color)
+  for id in all(list) do
+    for tile in all(placeblo) do
+      if id == tile.id then
+        for neighbour in all(tile.neighbours) do
+            if neighbour.color == color and contains(list,neighbour.id) == false then
+              add(list,neighbour.id)
+            end
+        end
+      end
+    end
   end
 end
 
@@ -227,8 +286,12 @@ function _update60()
   local y = p.y
   local rotation = p.block.rotation
   local rotated = false
+  local down = false
+  if every(90) then
+    y += 8
+    down = true
+  end
   if btnp(0,0) then x -= 8 end
-  if btnp(2,0) then y -= 8 end
   if btnp(1,0) then x += 8 end
   if btnp(3,0) then y += 8 end
   if btnp(4,0) then
@@ -238,16 +301,10 @@ function _update60()
     if p.block.rotation > 4 then p.block.rotation = 1 end
     rotated = true
   end
-  if btnp(5,0) then
-    place_block(p.block)
-    x = 4*8
-    y = 0
-    p.block = spawn_block(flr(rnd(3)+1))
-    for x in all(placeblo) do
-      x.neighbours = check_neighbours(x)
-      plug_in(x)
-    end
-  end
+  if p.block.rotation == 1 then y = mid(8,y,8*(level.height-1)) x = mid(8,x,8*level.width) end
+  if p.block.rotation == 2 then x = mid(16,x,8*(level.width)) y = mid(0,y,8*(level.height-1)) end
+  if p.block.rotation == 3 then y = mid(0,y,8*(level.height-2)) x = mid(8,x,8*(level.width)) end
+  if p.block.rotation == 4 then x = mid(8,x,8*(level.width-1)) y = mid(0,y,8*(level.height-1)) end
   if collision(x,y) or collision(x+8*cos(p.block.rotation/4),y+8*sin(p.block.rotation/4)) then
     x=p.x
     y=p.y
@@ -259,11 +316,21 @@ function _update60()
       end
     end
   end
-  if p.block.rotation == 1 then p.y = mid(8,y,8*(level.height-1)) p.x = mid(8,x,8*level.width) end
-  if p.block.rotation == 2 then p.x = mid(16,x,8*(level.width)) p.y = mid(0,y,8*(level.height-1)) end
-  if p.block.rotation == 3 then p.y = mid(0,y,8*(level.height-2)) p.x = mid(8,x,8*(level.width)) end
-  if p.block.rotation == 4 then p.x = mid(8,x,8*(level.width-1)) p.y = mid(0,y,8*(level.height-1)) end
-
+  if down and p.y == y then
+    place_block(p.block)
+    x = 4*8
+    y = 0
+    p.block = spawn_block(flr(rnd(3)+1))
+    for x in all(placeblo) do
+      x.neighbours = check_neighbours(x)
+      plug_in(x)
+    end
+    for x = 1,level.height+1 do
+      check_line(x)
+    end
+  end
+  p.x = x
+  p.y = y
   cam.newx = -16-(p.x/4)
   cam.newy = -6-(p.y/16)
   cam.x = lerp(cam.x,cam.newx,0.1)
@@ -353,13 +420,13 @@ __gfx__
 07777700000bb000000bb000000bbb00000bbb000000000000000000000000000000000000000000000000000000000030190a07200000440008800500000000
 00077000000bb000000bb000000bb000000bb0000000000000000000700000070000000000000000000000000000000030190a07220000640000800500000000
 00000000000bb000000bb000000bb000000bb0000000000000000000770000770000000000000000000000000000000030190a07020000640000800500000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030109a07020000604000800500000000
-77000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030109a07020000604000800500000000
-77700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030109a07022000604000800500000000
-77777777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030109a07002200604000800500222222
-77777777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030109a07000220604000800552200022
-77700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030109a07000022604400802250000000
-77000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030109a07000002220400222050000000
+0000000077777770aa50000000000000000000000000000000000000000000000000000000000000000000000000000030109a07020000604000800500000000
+770000007aaa0070a5a0000000000000000000000000000000000000000000000000000000000000000000000000000030109a07020000604000800500000000
+777000007aaa00775550000000000000000000000000000000000000000000000000000000000000000000000000000030109a07022000604000800500000000
+777777777aaa00779590000000000000000000000000000000000000000000000000000000000000000000000000000030109a07002200604000800500222222
+77777777799900775990000000000000000000000000000000000000000000000000000000000000000000000000000030109a07000220604000800552200022
+77700000799900700000000000000000000000000000000000000000000000000000000000000000000000000000000030109a07000022604400802250000000
+77000000777777700000000000000000000000000000000000000000000000000000000000000000000000000000000030109a07000002220400222050000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030119a00700000622422200050000000
 06666660505050503131313100000000000000000000000000000000000000000000000000000000000000000000000033019aa0700000600408000050000000
 6555555d0505050513131313000000000000000000000000000000000000000000000000000000000000000000000000030190a0070000600048000050000000
