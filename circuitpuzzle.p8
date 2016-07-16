@@ -19,7 +19,7 @@ placeblo = {}
 pink = 14
 green = 11
 purple = 13
-new_id = 1
+
 
 function push(list,item)
   local temp = {}
@@ -39,12 +39,11 @@ function spawn_tile(x,color1,color2)
   a = color1
   b = color2
   local tile = {
-     { sprite_x = 1, sprite_y = 17, side = {b, a, b, a}, rotation = 1, color = {color1,color2}, id = new_id },
-     { sprite_x = 2, sprite_y = 18, side = {e, b, b, b}, rotation = 1, color = {color1,color2}, id = new_id },
-     { sprite_x = 3, sprite_y = 19, side = {a, a, b, b}, rotation = 1, color = {color1,color2}, id = new_id },
-     { sprite_x = 4, sprite_y = 20, side = {a, e, a, a}, rotation = 1, color = {color1,color2}, id = new_id }
+     { sprite_x = 1, sprite_y = 17, side = {b, a, b, a}, rotation = 1, color = {color1,color2} },
+     { sprite_x = 2, sprite_y = 18, side = {b, b, e, b}, rotation = 1, color = {color1,color2} },
+     { sprite_x = 3, sprite_y = 19, side = {b, a, a, b}, rotation = 1, color = {color1,color2} },
+     { sprite_x = 4, sprite_y = 20, side = {e, a, a, e}, rotation = 1, color = {color1,color2} }
    }
-   new_id += 1
    return tile[x]
 end
 
@@ -68,13 +67,13 @@ end
 function place_block(block)
   local x = p.x
   local y = p.y
-  block[1].id = x/8 .. y/8
+  block[1].id = x/8 .. y/8+1
   block[1].x = x
   block[1].y = y
   add(placeblo,block[1])
   x = x+8*cos(p.block.rotation/4)
   y = y+8*sin(p.block.rotation/4)
-  block[2].id = x/8 .. y/8
+  block[2].id = x/8 .. y/8+1
   block[2].x = x
   block[2].y = y
   add(placeblo,block[2])
@@ -84,41 +83,48 @@ function opposite(x)
   if x == 1 then return 3
   elseif x == 2 then return 4
   elseif x == 3 then return 1
-  else return 2 end
+  elseif x == 4 then return 2 end
 end
 
 function check_neighbours(tile)
-  local id = {x = tile.x/8, y = tile.y/8}
+  local id = {x = tile.x/8, y = tile.y/8+1}
   local search = {}
+
   search[1] = id.x .. id.y-1
-  search[2] = id.x-1 .. id.y
-  search[3] = id.x+1 .. id.y
-  search[4] = id.x .. id.y+1
+  search[2] = id.x+1 .. id.y
+  search[3] = id.x .. id.y+1
+  search[4] = id.x-1 .. id.y
 
   local neighbours = {}
   local sidecounter = 1
   for path in all(search) do
     local color = tile.side[sidecounter]
     for x in all(placeblo) do
-      if path == x.id and color == x.side[opposite(sidecounter)] then
+
+      if path == x.id and color == x.side[opposite(sidecounter)] and color ~= 7 then
+        -- printh("tile_id: " .. id.x .. id.y .. " tile_side: " .. sidecounter .. " / " .. color)
+        -- printh("neighbour_id: " .. x.id .. " neighbour_side: " .. opposite(sidecounter) .. " / " .. x.side[opposite(sidecounter)] )
         add(neighbours, {id = x.id, color = x.side[opposite(sidecounter)]})
-        printh(x.id .. " " .. sidecounter)
       end
     end
     sidecounter += 1
-    printh(" ")
   end
   return neighbours
 end
 
-function plug_in(tile)
-  local y = (tile.y/8)+1
-
-  if tile.x-8 <= 0 and tile.side[4] ~= 7 then
-    plug[y] = {connected = true, color = tile.side[4]}
+function plug_in(line)
+  local id = 1 .. line
+  for x in all(placeblo) do
+    if x.id == id then
+      plug[line] = {connected = true, color = x.side[4]}
+    end
   end
-  if tile.x+8 > level.width*8 and tile.side[2] ~= 7 then
-    plug[y+10] = {connected = true, color = tile.side[2]}
+
+  id = level.width .. line
+  for x in all(placeblo) do
+    if x.id == id then
+      plug[line+10] = {connected = true, color = x.side[2]}
+    end
   end
 end
 
@@ -142,31 +148,44 @@ end
 
 function check_line(line)
   if plug[line].connected then
+    printh(line .. " ////")
     local id = 1 .. line
     local connections = {}
     add(connections,placeblo[contains_id(placeblo,id)].id)
-    pathfinder(connections, plug[line].color, 1)
+    connections = pathfinder(connections, plug[line].color, 1)
     printh(line .. ": " .. #connections)
   end
 end
 
-function pathfinder(list,color,item)
-  local a = contains_id(placeblo,list[item])
+function pathfinder(connections,color,item)
+  local a = contains_id(placeblo,connections[item])
+  printh("tile: " .. connections[item])
+  printh(#placeblo[a].neighbours .. "N")
   for x in all(placeblo[a].neighbours) do
-    if x.color == color and contains(list,x.id) == false then
-      add(list,x.id)
-      pathfinder(list,color,item+1)
-    end
+    if x.color == color and contains(connections,x.id) == false then
+      printh(x.id .. " ok!")
+      add(connections,x.id)
+      connections = pathfinder(connections,color,item+1)
+    else printh(x.id .. " not ok!") end
   end
+  return connections
 end
 
 function rotate_block(block_tile,times)
   local times = times or 1
   for x = 1,times do
-    block_tile.rotation += 1
-    if block_tile.rotation > 4 then block_tile.rotation = 1 end
+    block_tile.rotation -= 1
+    if block_tile.rotation < 1 then block_tile.rotation = 4 end
+
     add(block_tile.side,block_tile.side[1])
     del(block_tile.side,block_tile.side[1])
+
+    -- printh("start")
+    -- for x = 1,4 do
+    --   printh(x .. ": " .. block_tile.side[x])
+    -- end
+    -- printh("---")
+
   end
 end
 
@@ -299,8 +318,8 @@ function _update60()
   if btnp(4,0) then
     rotate_block(p.block[1])
     rotate_block(p.block[2])
-    p.block.rotation += 1
-    if p.block.rotation > 4 then p.block.rotation = 1 end
+    p.block.rotation -= 1
+    if p.block.rotation < 1 then p.block.rotation = 4 end
     rotated = true
   end
   if p.block.rotation == 1 then y = mid(8,y,8*(level.height-1)) x = mid(8,x,8*level.width) end
@@ -325,12 +344,12 @@ function _update60()
     p.block = spawn_block(flr(rnd(3)+1))
     for x in all(placeblo) do
       x.neighbours = check_neighbours(x)
-      plug_in(x)
     end
-    for x = 1,level.height+1 do
+    for x = 1,level.height do
+      plug_in(x)
       check_line(x)
     end
-    printh(#placeblo)
+    printh("----------")
   end
   p.x = x
   p.y = y
