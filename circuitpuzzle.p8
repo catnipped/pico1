@@ -33,22 +33,20 @@ function push(list,item)
 end
 
 function spawn_tile(x,color1,color2)
-  local a = 5
-  local b = 6
   local e = 7
-  a = color1
-  b = color2
+  local a = color1
+  local b = color2
   local tile = {
      { sprite_x = 1, sprite_y = 17, side = {b, a, b, a}, rotation = 1, color = {color1,color2} },
-     { sprite_x = 2, sprite_y = 18, side = {b, b, e, b}, rotation = 1, color = {color1,color2} },
-     { sprite_x = 3, sprite_y = 19, side = {b, a, a, b}, rotation = 1, color = {color1,color2} },
-     { sprite_x = 4, sprite_y = 20, side = {e, a, a, e}, rotation = 1, color = {color1,color2} }
+     { sprite_x = 2, sprite_y = 18, side = {e, b, b, b}, rotation = 1, color = {color1,color2} },
+     { sprite_x = 3, sprite_y = 19, side = {a, a, b, b}, rotation = 1, color = {color1,color2} },
+     { sprite_x = 4, sprite_y = 20, side = {e, e, a, a}, rotation = 1, color = {color1,color2} }
    }
    return tile[x]
 end
 
 function spawn_block(x)
-  local color = {pink,green,purple}
+  local color = {pink,green}
   local color1 = color[flr(rnd(#color))+1]
   del(color,color1)
   local color2 = color[flr(rnd(#color))+1]
@@ -56,10 +54,9 @@ function spawn_block(x)
  local block = {
     { spawn_tile(1,color1,color2), spawn_tile(1,color1,color2), rotation = 1},
     { spawn_tile(2,color1,color2), spawn_tile(2,color2,color1), rotation = 1},
-    { spawn_tile(3,color1,color2), spawn_tile(3,color1,color2), rotation = 1},
+    { spawn_tile(3,color2,color1), spawn_tile(3,color1,color2), rotation = 1},
   }
   rotate_block(block[2][2],2)
-  rotate_block(block[3][2],2)
 
   return block[x]
 end
@@ -146,6 +143,12 @@ function contains_id(table, id)
    return 0
 end
 
+function score(connections)
+  for id in all(connections) do
+    del(placeblo,placeblo[contains_id(placeblo,id)])
+  end
+end
+
 function check_line(line)
   if plug[line].connected then
     printh(line .. " ////")
@@ -154,6 +157,14 @@ function check_line(line)
     add(connections,placeblo[contains_id(placeblo,id)].id)
     connections = pathfinder(connections, plug[line].color, 1)
     printh(line .. ": " .. #connections)
+    for x = 1,level.height do
+      local final_step = level.width .. x
+      if contains(connections,final_step) then
+        score(connections)
+        plug[line] = {connected = false, color = 7}
+        plug[10+x] = {connected = false, color = 7}
+      end
+    end
   end
 end
 
@@ -177,8 +188,14 @@ function rotate_block(block_tile,times)
     block_tile.rotation -= 1
     if block_tile.rotation < 1 then block_tile.rotation = 4 end
 
-    add(block_tile.side,block_tile.side[1])
-    del(block_tile.side,block_tile.side[1])
+    block_tile.side = {
+      block_tile.side[4],
+      block_tile.side[1],
+      block_tile.side[2],
+      block_tile.side[3]
+    }
+    -- add(block_tile.side,block_tile.side[1])
+    -- del(block_tile.side,block_tile.side[1])
 
     -- printh("start")
     -- for x = 1,4 do
