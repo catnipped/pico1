@@ -99,16 +99,15 @@ function check_neighbours(tile)
   local sidecounter = 1
   for path in all(search) do
     local color = tile.side[sidecounter]
-    sidecounter += 1
     for x in all(placeblo) do
       if path == x.id and color == x.side[opposite(sidecounter)] then
         add(neighbours, {id = x.id, color = x.side[opposite(sidecounter)]})
+        printh(x.id .. " " .. sidecounter)
       end
     end
+    sidecounter += 1
+    printh(" ")
   end
-  -- for x in all(neighbours) do
-  --   printh(tile.id .. "= " .. x.id .. ": " .. x.color)
-  -- end
   return neighbours
 end
 
@@ -132,28 +131,31 @@ function contains(table, val)
    return false
 end
 
+function contains_id(table, id)
+   for i=1,#table do
+      if table[i].id == id then
+         return i
+      end
+   end
+   return 0
+end
+
 function check_line(line)
   if plug[line].connected then
     local id = 1 .. line
     local connections = {}
-    for tile in all(placeblo) do
-      if tile.id == id then add(connections,tile.id) end
-    end
-    pathfinder(connections, plug[line].color)
+    add(connections,placeblo[contains_id(placeblo,id)].id)
+    pathfinder(connections, plug[line].color, 1)
     printh(line .. ": " .. #connections)
   end
 end
 
-function pathfinder(list, color)
-  for id in all(list) do
-    for tile in all(placeblo) do
-      if id == tile.id then
-        for neighbour in all(tile.neighbours) do
-            if neighbour.color == color and contains(list,neighbour.id) == false then
-              add(list,neighbour.id)
-            end
-        end
-      end
+function pathfinder(list,color,item)
+  local a = contains_id(placeblo,list[item])
+  for x in all(placeblo[a].neighbours) do
+    if x.color == color and contains(list,x.id) == false then
+      add(list,x.id)
+      pathfinder(list,color,item+1)
     end
   end
 end
@@ -328,6 +330,7 @@ function _update60()
     for x = 1,level.height+1 do
       check_line(x)
     end
+    printh(#placeblo)
   end
   p.x = x
   p.y = y
