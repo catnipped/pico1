@@ -55,6 +55,7 @@ function spawn_block(x)
     { spawn_tile(1,color1,color2), spawn_tile(1,color1,color2), rotation = 1},
     { spawn_tile(2,color1,color2), spawn_tile(2,color2,color1), rotation = 1},
     { spawn_tile(3,color2,color1), spawn_tile(3,color1,color2), rotation = 1},
+    { spawn_tile(3,color2,color1), spawn_tile(4,color2,color1), rotation = 1},
   }
   rotate_block(block[2][2],2)
 
@@ -358,7 +359,7 @@ function _update60()
     place_block(p.block)
     x = 4*8
     y = 0
-    p.block = spawn_block(flr(rnd(3)+1))
+    p.block = spawn_block(flr(rnd(4)+1))
     for x in all(placeblo) do
       x.neighbours = check_neighbours(x)
     end
