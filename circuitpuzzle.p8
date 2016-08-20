@@ -5,6 +5,11 @@ __lua__
 p = {} --player
 p.x = 0
 p.y = 0
+p.scoring = false
+scoring_frame = 0
+scoring_list = {}
+scoring_current = 0
+scoring_color = 0
 
 level = {width = 7 , height = 10}
 
@@ -161,9 +166,10 @@ function check_line(line)
     for x = 1,level.height do
       local final_step = level.width .. x
       if contains(connections,final_step) then
-        score(connections)
-        plug[line] = {connected = false, color = 7}
-        plug[10+x] = {connected = false, color = 7}
+        scoring_list = connections
+        scoring_frame = 0
+        scoring_color = plug[line].color
+        p.scoring = true
       end
     end
   end
@@ -296,8 +302,13 @@ function tilesprites(tile)
   if tile.rotation == 2 then sprite = {nr = tile.sprite_x, flip_x = true, flip_y = false} end
   if tile.rotation == 3 then sprite = {nr = tile.sprite_y, flip_x = false, flip_y = true} end
   if tile.rotation == 4 then sprite = {nr = tile.sprite_x, flip_x = false, flip_y = true} end
-  pal(8,tile.color[1])
-  pal(11,tile.color[2])
+  if p.scoring and contains(scoring_list,tile.id) then
+    if tile.color[1] == scoring_color then pal(8,tile.color[1]) pal(11,0)
+    elseif tile.color[2] == scoring_color then pal(8,tile.color[0]) pal(11,tile.color[2]) end
+  else
+    pal(8,tile.color[1])
+    pal(11,tile.color[2])
+  end
   spr(sprite.nr,x,y,1,1,sprite.flip_x,sprite.flip_y)
   pal()
 end
@@ -320,7 +331,16 @@ end
 
 function _update60()
   frames += 1
-
+  if p.scoring then
+    if every(30) then scoring_frame += 1 end
+    if scoring_frame >= #scoring_list then
+      plug[placeblo[scoring_list[1]].y/8] = {connected = false, color = 7}
+      plug[placeblo[scoring_list[#scoring_list]].y/8] = {connected = false, color = 7}
+      score(scoring_list)
+      p.scoring = false
+    end
+    return
+  end
   local x = p.x
   local y = p.y
   local rotation = p.block.rotation
@@ -439,6 +459,16 @@ function _draw()
 
   for tile in all(placeblo) do
     tilesprites(tile)
+  end
+
+  if p.scoring then
+    for a = 1,#scoring_list do
+      if a <= scoring_frame then
+        x = placeblo[contains_id(placeblo,scoring_list[a])].x
+        y = placeblo[contains_id(placeblo,scoring_list[a])].y
+        print("+1",x+2,y+2,7)
+      end
+    end
   end
 
 end
