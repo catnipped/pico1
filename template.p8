@@ -94,7 +94,8 @@ end
 
 function _draw()
   cls()
-  splash()
+--  splash()
+  rect(5,5,15,30,7)
 end
 
 __gfx__

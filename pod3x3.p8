@@ -56,7 +56,7 @@ p2.deathcount = 0
 p2.guage = 5
 
 function splash()
-  frames += 0.5
+  frames += 1
   palt(12,true)
   palt(0,false)
   if frames > 45 then lid.y = lerp(lid.y,trash.y-1,0.08) end
@@ -1108,7 +1108,7 @@ function title_draw()
   if credits.p > #credits.s then credits.p = 1 end
 end
 
-function _update60()
+function _update()
   if game_start == false and trash.done == true then
     title_update()
   end
@@ -1427,3 +1427,4 @@ __music__
 00 41424344
 00 41424344
 00 41424344
+
