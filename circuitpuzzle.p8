@@ -1,7 +1,6 @@
 pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
-
 p = {} --player
 p.x = 0
 p.y = 0

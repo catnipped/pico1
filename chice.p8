@@ -22,8 +22,11 @@ player = {}
 hand = 33
 hold = 44
 clock = 35
-player[1] = { x = 1, y = 1, sprite = hand, color = faces[1], dice = {}}
-player[2] = { x = 6, y = 6, sprite = clock, color = faces[2],  dice = {}}
+player[1] = { x = 1, y = 1, sprite = hand, color = faces[1]}
+player[2] = { x = 6, y = 6, sprite = clock, color = faces[2]}
+dice = {}
+dice[1] = {}
+dice[2] = {}
 
 anim_x = 1
 anim_x_invert = 0
@@ -56,7 +59,6 @@ function get_d6(from,to)
 end
 
 function init_dice(player_number,y)
-  local list = {}
   for n = 1,6 do
     local die = {}
     die.face = n
@@ -69,33 +71,33 @@ function init_dice(player_number,y)
     end
     die.x = n
     die.y = y
-    add(list,die)
-  end
-  add(player[player_number].dice,list)
+    dice[player_number][n] = die
+  end 
 end
 
-
-function draw_dice(d)
+function draw_dice(p,n)
+  local x = dice[p][n].x
+  local y = dice[p][n].y
+  local sprite = (dice[p][n].face) * 16
   local face_x = {}
-  face_x[1] = (d.x*16)+16*anim_x_invert
+  face_x[1] = (x*16)+16*anim_x_invert
   face_x[2] = 16*anim_x
   local face_y = {}
-  face_y[1] = (d.y*16)+16*anim_y_invert
+  face_y[1] = (y*16)+16*anim_y_invert
   face_y[2] = 16*anim_y
 
   --face
---  sspr((16*d.face)-8,16,16,face_x[1],face_y[1],face_x[2],face_y[2])
+  sspr(sprite+8,0,16,16,face_x[1],face_y[1],face_x[2],face_y[2])
 
   --neighbours
-  -- local west_x = {
-  --   1 = die.x*16,
-  --   2 = 16*anim_x
-  -- }
-  -- local west_y = {
-  --   1 = (die.y*16)+16*anim_y_invert,
-  --   2 = 16
-  -- }
-  -- sspr((16*d6[die.face][1])-8,16,16,west_x[1],west_y[1],west_x[2],west_y[2])
+   local west_x = {}
+   west_x[1] = x*16
+   west_x[2] = 16*anim_x
+   local west_y = {}
+   west_y[1] = (y*16)+16*anim_y_invert
+   west_y[2] = 16
+   local sprite = dice[p][n].neighbours * 16
+   sspr((16*d6[n.face][1])-8,16,16,west_x[1],west_y[1],west_x[2],west_y[2])
 end
 
 function init_grid()
@@ -377,17 +379,17 @@ end
 
 function _draw()
   cls()
-  for d in all(player[1].dice) do
-    draw_dice(player[1].dice[d])
+  for n = 1,#dice[1] do
+    draw_dice(1,n)
   end
-  -- for d = 1,#player[2].dice do
-  --   draw_dice(player[2].dice[d])
-  -- end
+  for n = 1,#dice[2] do
+    draw_dice(2,n)
+  end
   --draw_title()
   --draw_board()
   --draw_gui()
   --  splash()
-  --print(stat(1),cam.x+1,cam.y+1,8)
+  print(dice[1][5].x,5,5,8)
 end
 
 __gfx__
